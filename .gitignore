@@ -33,3 +33,12 @@ yarn-error.log*
 # OS
 .DS_Store
 Thumbs.db 
+
+# In root .gitignore
+.env
+.env.local
+node_modules/
+frontend/node_modules/
+backend/node_modules/
+frontend/.env
+backend/.env
