@@ -1,83 +1,45 @@
 "use client"
 
-import { useState } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { motion } from "framer-motion"
-import { Home, Search, X } from "lucide-react"
+import { Home, Menu, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { SidebarTrigger } from "@/components/ui/sidebar"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { cn } from "@/lib/utils"
+import { useSidebar } from "@/components/ui/sidebar"
 
 export function BlogHeader() {
-  const pathname = usePathname()
-  const [searchOpen, setSearchOpen] = useState(false)
+  const { setOpen } = useSidebar()
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center">
+    <header className="fixed top-0 left-0 right-0 z-30 h-14 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container flex h-full items-center gap-4">
         <div className="flex items-center gap-2">
-          <SidebarTrigger className="mr-2" />
-
-          <Link href="/" className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" asChild>
-              <span>
-                <Home className="h-5 w-5" />
-                <span className="sr-only">Home</span>
-              </span>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8"
+            onClick={() => setOpen(true)}
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+          <Link href="/">
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Home className="h-5 w-5" />
             </Button>
           </Link>
-
-          {pathname !== "/" && (
-            <Button variant="ghost" size="sm" className="hidden md:flex" onClick={() => window.history.back()}>
-              Back
-            </Button>
-          )}
         </div>
-
-        <div className="flex-1 flex justify-center">
-          <AnimatedSearchBar open={searchOpen} setOpen={setSearchOpen} />
+        <div className="flex-1">
+          <Link href="/" className="text-lg font-semibold">
+            Birochan Blog
+          </Link>
         </div>
-
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Button variant="ghost" size="icon" onClick={() => setSearchOpen(!searchOpen)} className="md:hidden">
-            {searchOpen ? <X className="h-5 w-5" /> : <Search className="h-5 w-5" />}
+          <Button variant="ghost" size="icon" className="h-8 w-8">
+            <Search className="h-4 w-4" />
           </Button>
         </div>
       </div>
     </header>
-  )
-}
-
-function AnimatedSearchBar({
-  open,
-  setOpen,
-}: {
-  open: boolean
-  setOpen: (open: boolean) => void
-}) {
-  return (
-    <div className="relative w-full max-w-md">
-      <motion.div
-        initial={false}
-        animate={{
-          width: open ? "100%" : "240px",
-        }}
-        className={cn("relative md:block", open ? "block" : "hidden md:block")}
-      >
-        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-        <Input
-          type="search"
-          placeholder="Search posts..."
-          className="w-full pl-8 md:w-[240px] lg:w-[320px]"
-          onFocus={() => setOpen(true)}
-          onBlur={() => setOpen(false)}
-        />
-      </motion.div>
-    </div>
   )
 }
 

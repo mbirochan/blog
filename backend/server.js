@@ -1,33 +1,31 @@
+require('./config/dotenv');
 const express = require('express');
+const cors = require('cors');
+const morgan = require('morgan');
+const errorHandler = require('./middlewares/errorHandler');
+
+// Import routes
+const authRoutes = require('./routes/authRoutes');
+const postRoutes = require('./routes/postRoutes');
+const commentRoutes = require('./routes/commentRoutes');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
-const passport = require('passport');
-const OAuth2Strategy = require('passport-oauth2').Strategy;
 
-passport.use(new OAuth2Strategy({
-    authorizationURL: 'https://provider.com/oauth2/authorize',
-    tokenURL: 'https://provider.com/oauth2/token',
-    clientID: 'your-client-id',
-    clientSecret: 'your-client-secret',
-    callbackURL: 'http://localhost:3000/auth/callback'
-  },
-  function(accessToken, refreshToken, profile, cb) {
-    // Here you would find or create a user in your database
-    return cb(null, profile);
-  }
-));
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(morgan('dev'));
 
-app.use(passport.initialize());
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/posts', postRoutes);
+app.use('/api/comments', commentRoutes);
 
-app.get('/auth/provider', passport.authenticate('oauth2'));
+// Error handling
+app.use(errorHandler);
 
-app.get('/auth/callback', 
-  passport.authenticate('oauth2', { failureRedirect: '/' }),
-  function(req, res) {
-    // Successful authentication, redirect home.
-    res.redirect('/');
-  });
-
+// Start server
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

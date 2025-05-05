@@ -11,23 +11,16 @@ import { UpvoteButton } from "@/components/upvote-button"
 import { ImageGallery } from "@/components/image-gallery"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { use } from "react"
+import { getPostBySlug } from '@/lib/api'
 
-export default function BlogPost({ params }: { params: { slug: string } }) {
-  const post = allPosts.find((post) => post.slug === params.slug)
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-
-  // This would be replaced with your actual auth check
-  useEffect(() => {
-    // Check if user is logged in
-    // For demo purposes, we'll just set a random value
-    setIsLoggedIn(Math.random() > 0.5)
-  }, [])
+export default async function BlogPost({ params }: { params: { slug: string } }) {
+  const post = await getPostBySlug(params.slug)
 
   if (!post) {
     notFound()
   }
 
-  // For demo purposes, let's create an array of images
   const postImages = post.image
     ? [
         post.image,
@@ -39,58 +32,26 @@ export default function BlogPost({ params }: { params: { slug: string } }) {
   return (
     <BlogLayout>
       <div className="max-w-3xl mx-auto">
-        <Link href="/" className="inline-flex items-center text-sm text-muted-foreground hover:text-primary mb-6">
+        <Link href="/blog" className="inline-flex items-center text-sm text-muted-foreground hover:text-primary mb-6">
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to home
+          Back to blog
         </Link>
 
-        <article className="prose prose-stone dark:prose-invert max-w-none">
-          <div className="flex flex-wrap items-center gap-2 mb-4">
-            {post.category && (
-              <Badge variant="outline" className="text-xs">
-                <Tag className="mr-1 h-3 w-3" />
-                {post.category}
-              </Badge>
-            )}
-            <div className="flex items-center text-sm text-muted-foreground">
-              <Calendar className="mr-1 h-3 w-3" />
-              <time dateTime={post.date}>{post.date}</time>
-            </div>
-            <div className="flex items-center text-sm text-muted-foreground">
-              <Clock className="mr-1 h-3 w-3" />
-              <span>{post.readingTime} min read</span>
-            </div>
-          </div>
-
+        <article className="prose dark:prose-invert mx-auto">
           <h1>{post.title}</h1>
-
-          <div className="flex items-center gap-4 my-6">
-            <UpvoteButton
-              postId={post.id}
-              initialUpvotes={Math.floor(Math.random() * 100)}
-              isLoggedIn={isLoggedIn}
-              hasUpvoted={false}
-            />
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <span>{post.category}</span>
+            <span>•</span>
+            <time>{post.date}</time>
           </div>
-
-          {postImages.length > 0 && (
-            <div className="my-6">
-              <ImageGallery images={postImages} alt={post.title} />
-            </div>
-          )}
-
-          <div
-            dangerouslySetInnerHTML={{
-              __html: post.content || "<p>" + post.excerpt + "</p><p>Content coming soon...</p>",
-            }}
-          />
+          <div dangerouslySetInnerHTML={{ __html: post.content }} />
         </article>
 
         <Separator className="my-10" />
 
         <CommentSection
           postId={post.id}
-          isLoggedIn={isLoggedIn}
+          isLoggedIn={Math.random() > 0.5}
           comments={[
             {
               id: "1",

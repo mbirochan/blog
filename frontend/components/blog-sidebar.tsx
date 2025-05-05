@@ -1,10 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { motion } from "framer-motion"
-import { Bookmark, Calendar, Hash, Home, Search, Settings, Sparkles, User } from "lucide-react"
+import { Bookmark, Calendar, Hash, Home, Search, Settings, Sparkles, User, X } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -17,27 +17,59 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  useSidebar,
 } from "@/components/ui/sidebar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
-import { allPosts, categories } from "@/lib/blog-data"
+import { getPosts, getCategories, Post, Category } from "@/lib/supabase"
 
 export function BlogSidebar() {
   const pathname = usePathname()
   const [searchQuery, setSearchQuery] = useState("")
+  const { open: isOpen, setOpen } = useSidebar()
+  const [posts, setPosts] = useState<Post[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    // Set sidebar to closed on initial load
+    setOpen(false)
+  }, [])
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        setIsLoading(true)
+        const [fetchedPosts, fetchedCategories] = await Promise.all([
+          getPosts(),
+          getCategories()
+        ])
+        setPosts(fetchedPosts)
+        setCategories(fetchedCategories)
+      } catch (err) {
+        setError('Failed to fetch data')
+        console.error('Error fetching data:', err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
 
   const filteredPosts = searchQuery
-    ? allPosts.filter(
+    ? posts.filter(
         (post) =>
           post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          post.excerpt.toLowerCase().includes(searchQuery.toLowerCase()),
+          post.excerpt.toLowerCase().includes(searchQuery.toLowerCase())
       )
     : []
 
   return (
-    <Sidebar>
+    <Sidebar className="h-full">
       <SidebarHeader>
-        <div className="flex items-center gap-2 px-2 py-3">
+        <div className="flex items-center gap-2 px-2 py-3 relative">
           <Avatar className="h-8 w-8">
             <AvatarImage src="/placeholder.svg?height=32&width=32" alt="Avatar" />
             <AvatarFallback>JD</AvatarFallback>
@@ -46,6 +78,13 @@ export function BlogSidebar() {
             <h3 className="font-medium">My Blog</h3>
             <p className="text-xs text-muted-foreground">Personal thoughts & ideas</p>
           </div>
+          <button
+            className="absolute right-2 top-1 p-1 rounded hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring md:block"
+            aria-label="Close sidebar"
+            onClick={() => setOpen(false)}
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
         <div className="px-2 pb-2">
           <div className="relative">
@@ -96,9 +135,11 @@ export function BlogSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton>
-                  <Sparkles className="h-4 w-4" />
-                  <span>Featured</span>
+                <SidebarMenuButton asChild>
+                  <Link href="/blog">
+                    <Sparkles className="h-4 w-4" />
+                    <span>Blog</span>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
@@ -120,33 +161,51 @@ export function BlogSidebar() {
         <SidebarGroup>
           <SidebarGroupLabel>Categories</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
-              {categories.map((category) => (
-                <SidebarMenuItem key={category.id}>
-                  <SidebarMenuButton>
-                    <Hash className="h-4 w-4" />
-                    <span>{category.name}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
+            {isLoading ? (
+              <div className="px-2 py-1.5 text-sm text-muted-foreground">Loading categories...</div>
+            ) : error ? (
+              <div className="px-2 py-1.5 text-sm text-destructive">Failed to load categories</div>
+            ) : categories.length > 0 ? (
+              <SidebarMenu>
+                {categories.map((category) => (
+                  <SidebarMenuItem key={category.id}>
+                    <SidebarMenuButton asChild>
+                      <Link href={`/blog/category/${category.slug}`}>
+                        <Hash className="h-4 w-4" />
+                        <span>{category.name}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            ) : (
+              <div className="px-2 py-1.5 text-sm text-muted-foreground">No categories available</div>
+            )}
           </SidebarGroupContent>
         </SidebarGroup>
 
         <SidebarGroup>
           <SidebarGroupLabel>Recent Posts</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
-              {allPosts.slice(0, 5).map((post) => (
-                <SidebarMenuItem key={post.id}>
-                  <SidebarMenuButton asChild isActive={pathname === `/blog/${post.slug}`}>
-                    <Link href={`/blog/${post.slug}`}>
-                      <span>{post.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
+            {isLoading ? (
+              <div className="px-2 py-1.5 text-sm text-muted-foreground">Loading posts...</div>
+            ) : error ? (
+              <div className="px-2 py-1.5 text-sm text-destructive">Failed to load posts</div>
+            ) : posts.length > 0 ? (
+              <SidebarMenu>
+                {posts.slice(0, 5).map((post) => (
+                  <SidebarMenuItem key={post.id}>
+                    <SidebarMenuButton asChild isActive={pathname === `/blog/${post.slug}`}>
+                      <Link href={`/blog/${post.slug}`}>
+                        <span>{post.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            ) : (
+              <div className="px-2 py-1.5 text-sm text-muted-foreground">No posts available</div>
+            )}
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
@@ -156,7 +215,7 @@ export function BlogSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton>
               <User className="h-4 w-4" />
-              <span>Profile</span>
+              <span>Admin Login</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
