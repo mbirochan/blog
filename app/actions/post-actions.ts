@@ -212,6 +212,12 @@ export async function getAllPosts() {
 // Get published posts (for public)
 export async function getPublishedPosts() {
   try {
+    // If Supabase credentials are not provided, fall back to local data
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_KEY) {
+      const { allPosts } = await import("@/lib/blog-data")
+      return allPosts
+    }
+
     const { data, error } = await supabase
       .from("posts")
       .select("*")
@@ -223,7 +229,9 @@ export async function getPublishedPosts() {
     return data || []
   } catch (error) {
     console.error("Error fetching published posts:", error)
-    return []
+    // Use local posts as a fallback if Supabase request fails
+    const { allPosts } = await import("@/lib/blog-data")
+    return allPosts
   }
 }
 
