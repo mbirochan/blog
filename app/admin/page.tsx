@@ -6,6 +6,9 @@ import { PostsList } from "@/components/admin/posts-list"
 import { PostEditor } from "@/components/admin/post-editor"
 import { CommentsList } from "@/components/admin/comments-list"
 import { getAllPosts } from "@/app/actions/post-actions"
+import { auth } from "@/lib/auth"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { PostsList } from "@/components/admin/posts-list"
 
 async function checkIsAdmin(userId: string) {
   // Mock admin check - in a real app this would check the database

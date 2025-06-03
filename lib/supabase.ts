@@ -8,7 +8,6 @@ const supabaseKey = process.env.SUPABASE_KEY || process.env.NEXT_PUBLIC_SUPABASE
 export const supabase = supabaseUrl !== "https://placeholder.supabase.co" && supabaseKey !== "placeholder-key" 
   ? createClient(supabaseUrl, supabaseKey)
   : null
-</supabase>
 
 // Database schema types
 export type Post = {
