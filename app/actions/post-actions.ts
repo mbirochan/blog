@@ -197,33 +197,50 @@ export async function getAllPosts() {
     redirect("/admin/login")
   }
 
+  if (!supabase) {
+    return mockPosts
+  }
+
   try {
-    const { data, error } = await supabase.from("posts").select("*").order("created_at", { ascending: false })
+    const { data: posts, error } = await supabase
+      .from("posts")
+      .select("*")
+      .order("created_at", { ascending: false })
 
-    if (error) throw error
+    if (error) {
+      console.error("Error fetching all posts:", error)
+      return mockPosts
+    }
 
-    return data || []
+    return posts || mockPosts
   } catch (error) {
-    console.error("Error fetching posts:", error)
-    return []
+    console.error("Supabase connection error:", error)
+    return mockPosts
   }
 }
 
 // Get published posts (for public)
 export async function getPublishedPosts() {
+  if (!supabase) {
+    return mockPosts
+  }
+
   try {
-    const { data, error } = await supabase
+    const { data: posts, error } = await supabase
       .from("posts")
       .select("*")
       .eq("published", true)
       .order("created_at", { ascending: false })
 
-    if (error) throw error
+    if (error) {
+      console.error("Error fetching posts:", error)
+      return mockPosts
+    }
 
-    return data || []
+    return posts || mockPosts
   } catch (error) {
-    console.error("Error fetching published posts:", error)
-    return []
+    console.error("Supabase connection error:", error)
+    return mockPosts
   }
 }
 

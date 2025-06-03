@@ -1,11 +1,14 @@
 import { createClient } from "@supabase/supabase-js"
 
 // These would be environment variables in a real application
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
-const supabaseKey = process.env.SUPABASE_KEY || ""
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co"
+const supabaseKey = process.env.SUPABASE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder-key"
 
 // Create a single supabase client for the entire app
-export const supabase = createClient(supabaseUrl, supabaseKey)
+export const supabase = supabaseUrl !== "https://placeholder.supabase.co" && supabaseKey !== "placeholder-key" 
+  ? createClient(supabaseUrl, supabaseKey)
+  : null
+</supabase>
 
 // Database schema types
 export type Post = {

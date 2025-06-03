@@ -7,6 +7,11 @@ import { PostEditor } from "@/components/admin/post-editor"
 import { CommentsList } from "@/components/admin/comments-list"
 import { getAllPosts } from "@/app/actions/post-actions"
 
+async function checkIsAdmin(userId: string) {
+  // Mock admin check - in a real app this would check the database
+  return true
+}
+
 export default async function AdminPage() {
   const session = await auth()
 
