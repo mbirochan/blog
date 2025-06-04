@@ -1,11 +1,9 @@
-
-import NextAuth from "next-auth"
+import NextAuth, { getServerSession, type NextAuthOptions } from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
 import EmailProvider from "next-auth/providers/email"
 import { SupabaseAdapter } from "@next-auth/supabase-adapter"
-import type { NextAuthConfig } from "next-auth"
 
-export const authConfig: NextAuthConfig = {
+export const authConfig: NextAuthOptions = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || "",
@@ -29,7 +27,6 @@ export const authConfig: NextAuthConfig = {
   }),
   callbacks: {
     async session({ session, user }) {
-      // Add user ID to the session
       if (session?.user) {
         session.user.id = user.id
       }
@@ -44,7 +41,12 @@ export const authConfig: NextAuthConfig = {
   },
 }
 
-const nextAuth = NextAuth(authConfig)
+export const handlers = {
+  GET: NextAuth(authConfig),
+  POST: NextAuth(authConfig),
+}
 
-export const { handlers, auth, signIn, signOut } = nextAuth
-export default nextAuth
+export async function auth() {
+  return await getServerSession(authConfig)
+}
+
