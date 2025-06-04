@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { motion } from "framer-motion"
@@ -20,11 +20,36 @@ import {
 } from "@/components/ui/sidebar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
-import { categories } from "@/lib/blog-data"
+import { supabase } from "@/lib/supabase"
+
+interface Category {
+  id: string
+  name: string
+}
 
 export function BlogSidebar() {
   const pathname = usePathname()
   const [searchQuery, setSearchQuery] = useState("")
+  const [categories, setCategories] = useState<Category[]>([])
+
+  useEffect(() => {
+    async function fetchCategories() {
+      if (!supabase) return
+      const { data, error } = await supabase
+        .from("posts")
+        .select("category")
+        .neq("category", null)
+
+      if (!error && data) {
+        const unique = Array.from(new Set(data.map((p) => p.category as string)))
+          .filter(Boolean)
+          .map((name) => ({ id: name, name }))
+        setCategories(unique)
+      }
+    }
+
+    fetchCategories()
+  }, [])
 
   const filteredPosts = searchQuery
     ? [] // Will be populated with real data later
