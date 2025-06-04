@@ -5,38 +5,6 @@ import { redirect } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { auth } from "@/lib/auth"
 
-// Mock data for development when Supabase is not configured
-const mockPosts = [
-  {
-    id: "1",
-    title: "Welcome to Our Blog",
-    slug: "welcome-to-our-blog",
-    content: "This is a sample blog post to demonstrate the functionality of our blog application.",
-    excerpt: "A sample blog post demonstrating our blog functionality.",
-    category: "General",
-    image_url: "/placeholder.jpg",
-    published: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    author_id: "sample-author",
-    upvotes: 0
-  },
-  {
-    id: "2",
-    title: "Getting Started Guide",
-    slug: "getting-started-guide",
-    content: "Learn how to use this blog platform effectively with this comprehensive guide.",
-    excerpt: "A comprehensive guide to using this blog platform.",
-    category: "Tutorial",
-    image_url: "/placeholder.jpg",
-    published: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    author_id: "sample-author",
-    upvotes: 5
-  }
-]
-
 // Create or update a post
 export async function savePost(formData: FormData) {
   const session = await auth()
@@ -236,23 +204,16 @@ export async function getAllPosts() {
     redirect("/admin/login")
   }
 
-  // Mock admin check when Supabase is not available
-  if (!supabase) {
-    // Allow access for development
-    const isAdmin = true // In development, assume user is admin
-    if (!isAdmin) {
-      redirect("/admin/login")
-    }
-  } else {
-    const { data: profile } = await supabase.from("profiles").select("role").eq("id", session.user.id).single()
+  if (supabase) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", session.user.id)
+      .single()
 
     if (profile?.role !== "admin") {
       redirect("/admin/login")
     }
-  }
-
-  if (!supabase) {
-    return mockPosts
   }
 
   try {
@@ -263,20 +224,20 @@ export async function getAllPosts() {
 
     if (error) {
       console.error("Error fetching all posts:", error)
-      return mockPosts
+      return []
     }
 
-    return posts || mockPosts
+    return posts || []
   } catch (error) {
     console.error("Supabase connection error:", error)
-    return mockPosts
+    return []
   }
 }
 
 // Get published posts (for public)
 export async function getPublishedPosts() {
   if (!supabase) {
-    return mockPosts
+    return []
   }
 
   try {
@@ -288,20 +249,20 @@ export async function getPublishedPosts() {
 
     if (error) {
       console.error("Error fetching posts:", error)
-      return mockPosts
+      return []
     }
 
-    return posts || mockPosts
+    return posts || []
   } catch (error) {
     console.error("Supabase connection error:", error)
-    return mockPosts
+    return []
   }
 }
 
 // Get a single post by slug
 export async function getPostBySlug(slug: string) {
   if (!supabase) {
-    return mockPosts.find(post => post.slug === slug) || null
+    return null
   }
 
   try {
@@ -312,7 +273,7 @@ export async function getPostBySlug(slug: string) {
     return data
   } catch (error) {
     console.error("Error fetching post:", error)
-    return mockPosts.find(post => post.slug === slug) || null
+    return null
   }
 }
 
@@ -338,5 +299,29 @@ export async function getComments(postId: string) {
   } catch (error) {
     console.error("Error fetching comments:", error)
     return { comments: [] }
+  }
+}
+
+export async function getCategories() {
+  if (!supabase) {
+    return []
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("posts")
+      .select("category")
+      .neq("category", null)
+
+    if (error) throw error
+
+    const unique = Array.from(new Set(data.map((p) => p.category as string)))
+      .filter(Boolean)
+      .map((name) => ({ id: name, name }))
+
+    return unique
+  } catch (error) {
+    console.error("Error fetching categories:", error)
+    return []
   }
 }

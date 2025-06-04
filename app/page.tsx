@@ -1,7 +1,6 @@
 import { BlogLayout } from "@/components/blog-layout"
 import { BlogCard } from "@/components/blog-card"
 import { getPublishedPosts } from "@/app/actions/post-actions"
-import { categories } from "@/lib/blog-data"
 
 interface HomeProps {
   searchParams: { category?: string }
