@@ -54,24 +54,7 @@ export async function toggleUpvote(postId: string) {
 
 // Function to check if a user has upvoted a post
 export async function getUpvoteStatus(postId: string) {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const upvoteCookie = cookieStore.get(`upvote-${postId}`)
-  const hasUpvoted = upvoteCookie?.value === "true"
-
-  try {
-    // Get the current upvote count
-    const { data: post } = await supabase.from("posts").select("upvotes").eq("id", postId).single()
-
-    if (!post) {
-      return { upvotes: 0, hasUpvoted: false }
-    }
-
-    return {
-      upvotes: post.upvotes,
-      hasUpvoted,
-    }
-  } catch (error) {
-    console.error("Error getting upvote status:", error)
-    return { upvotes: 0, hasUpvoted: false }
-  }
+  return upvoteCookie?.value === "true"
 }

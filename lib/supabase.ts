@@ -1,10 +1,10 @@
+
 import { createClient } from "@supabase/supabase-js"
 
-// These would be environment variables in a real application
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co"
-const supabaseKey = process.env.SUPABASE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder-key"
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder-key"
 
-// Create a single supabase client for the entire app
+// Only create client if we have real credentials
 export const supabase = supabaseUrl !== "https://placeholder.supabase.co" && supabaseKey !== "placeholder-key" 
   ? createClient(supabaseUrl, supabaseKey)
   : null
@@ -13,16 +13,15 @@ export const supabase = supabaseUrl !== "https://placeholder.supabase.co" && sup
 export type Post = {
   id: string
   title: string
-  slug: string
   content: string
   excerpt: string
-  category: string
-  image_url: string
+  slug: string
+  featured_image?: string
   published: boolean
+  upvotes: number
   created_at: string
   updated_at: string
-  author_id: string
-  upvotes: number
+  author_id?: string
 }
 
 export type Comment = {
@@ -30,14 +29,21 @@ export type Comment = {
   content: string
   post_id: string
   user_id: string
-  parent_id: string | null
+  parent_id?: string
   created_at: string
+  updated_at: string
+  user?: {
+    name: string
+    email: string
+  }
+  replies?: Comment[]
 }
 
 export type Profile = {
   id: string
   name: string
   email: string
-  role: "user" | "admin"
+  role: 'admin' | 'user'
   created_at: string
+  updated_at: string
 }
