@@ -23,24 +23,26 @@ export const authConfig: NextAuthConfig = {
       from: process.env.EMAIL_FROM || "",
     }),
   ],
-  adapter: SupabaseAdapter({
-    url: process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-    secret: process.env.SUPABASE_SERVICE_ROLE_KEY || "",
-  }),
+  adapter: process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY 
+    ? SupabaseAdapter({
+        url: process.env.NEXT_PUBLIC_SUPABASE_URL,
+        secret: process.env.SUPABASE_SERVICE_ROLE_KEY,
+      })
+    : undefined,
   callbacks: {
     async session({ session, user }) {
       // Add user ID to the session
-      if (session?.user) {
+      if (session?.user && user) {
         session.user.id = user.id
       }
       return session
     },
   },
   pages: {
-    signIn: "/auth/signin",
-    signOut: "/auth/signout",
-    error: "/auth/error",
-    verifyRequest: "/auth/verify-request",
+    signIn: "/api/auth/signin",
+    signOut: "/api/auth/signout",
+    error: "/api/auth/error",
+    verifyRequest: "/api/auth/verify-request",
   },
 }
 
