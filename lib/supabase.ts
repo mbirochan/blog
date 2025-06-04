@@ -33,8 +33,8 @@ export type Post = {
 
 export type Comment = {
   id: string
-  content: string
   post_id: string
+  content: string
   user_id: string
   parent_id?: string
   created_at: string
@@ -42,7 +42,6 @@ export type Comment = {
     name: string
     email: string
   }
-  replies?: Comment[]
 }
 
 export type Profile = {
