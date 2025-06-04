@@ -1,7 +1,4 @@
-` tags. I'll pay close attention to the syntax errors and ensure the code is complete and runnable.
 
-```
-<replit_final_file>
 import { createClient } from "@supabase/supabase-js"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co"
