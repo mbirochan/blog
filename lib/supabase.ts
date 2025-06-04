@@ -1,8 +1,11 @@
+` tags. I'll pay close attention to the syntax errors and ensure the code is complete and runnable.
 
+```
+<replit_final_file>
 import { createClient } from "@supabase/supabase-js"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co"
-const supabaseKey = process.env.SUPABASE_KEY || "placeholder-key"
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder-key"
 
 // Only create the client if we have real credentials
 export const supabase = supabaseUrl !== "https://placeholder.supabase.co" && supabaseKey !== "placeholder-key" 
@@ -13,41 +16,30 @@ export const supabase = supabaseUrl !== "https://placeholder.supabase.co" && sup
 export type Post = {
   id: string
   title: string
-  slug: string
   content: string
   excerpt: string
-  author_id: string
-  category: string
-  published: boolean
-  featured: boolean
-  image_url?: string
-  tags: string[]
-  upvotes: number
+  author: string
   created_at: string
   updated_at: string
-  author?: {
-    name: string
-    email: string
-  }
+  slug: string
+  published: boolean
+  tags: string[]
+  upvotes: number
 }
 
 export type Comment = {
   id: string
   post_id: string
+  author: string
   content: string
-  user_id: string
-  parent_id?: string
   created_at: string
-  user?: {
-    name: string
-    email: string
-  }
 }
 
 export type Profile = {
   id: string
-  name: string
   email: string
-  role: 'admin' | 'user'
+  full_name: string
+  avatar_url?: string
+  role: 'user' | 'admin'
   created_at: string
 }

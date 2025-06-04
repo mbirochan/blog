@@ -1,4 +1,5 @@
-import NextAuth, { getServerSession, type NextAuthOptions } from "next-auth"
+
+import NextAuth, { type NextAuthOptions } from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
 import EmailProvider from "next-auth/providers/email"
 import { SupabaseAdapter } from "@next-auth/supabase-adapter"
@@ -29,9 +30,7 @@ export const authConfig: NextAuthOptions = {
     : undefined,
   callbacks: {
     async session({ session, user }) {
-
       if (session?.user && user) {
-
         session.user.id = user.id
       }
       return session
@@ -45,7 +44,7 @@ export const authConfig: NextAuthOptions = {
   },
 }
 
+const nextAuth = NextAuth(authConfig)
 
-export const { handlers, auth, signIn, signOut } = NextAuth(authConfig)
-
-
+export const { handlers, auth, signIn, signOut } = nextAuth
+export { nextAuth as default }
