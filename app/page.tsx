@@ -7,8 +7,9 @@ interface HomeProps {
   searchParams: { category?: string }
 }
 
-export default async function Home({ searchParams }: { searchParams: { category?: string | undefined; }; }) {
-  const category = searchParams?.category
+export default async function Home({ searchParams }: { searchParams: Promise<{ category?: string | undefined; }>; }) {
+  const resolvedSearchParams = await searchParams
+  const category = resolvedSearchParams?.category
   const allPosts = await getPublishedPosts()
 
   // Filter posts by category if specified

@@ -55,12 +55,20 @@ export async function toggleUpvote(postId: string) {
 
 // Function to check if a user has upvoted a post
 export async function getUpvoteStatus(postId: string) {
-  const session = await auth()
-  const cookieStore = await cookies()
-  const upvoteCookie = cookieStore.get(`upvote-${postId}`)
+  try {
+    const session = await auth()
+    const cookieStore = await cookies()
+    const upvoteCookie = cookieStore.get(`upvote-${postId}`)
 
-  return {
-    hasUpvoted: !!upvoteCookie?.value,
-    isAuthenticated: !!session?.user,
+    return {
+      hasUpvoted: upvoteCookie?.value === "true",
+      isAuthenticated: !!session?.user,
+    }
+  } catch (error) {
+    console.error("Error getting upvote status:", error)
+    return {
+      hasUpvoted: false,
+      isAuthenticated: false,
+    }
   }
 }

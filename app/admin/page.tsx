@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation"
 
+import { redirect } from "next/navigation"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { auth } from "@/lib/auth"
 import { PostsList } from "@/components/admin/posts-list"
@@ -7,6 +7,7 @@ import { PostEditor } from "@/components/admin/post-editor"
 import { CommentsList } from "@/components/admin/comments-list"
 import { getAllPosts } from "@/app/actions/post-actions"
 
+// Helper function to check if user is admin
 async function checkIsAdmin(userId: string) {
   // Mock admin check - in a real app this would check the database
   return true
@@ -58,13 +59,4 @@ export default async function AdminPage() {
       </Tabs>
     </div>
   )
-}
-
-// Helper function to check if user is admin
-async function checkIsAdmin(userId: string) {
-  const { supabase } = await import("@/lib/supabase")
-
-  const { data } = await supabase.from("profiles").select("role").eq("id", userId).single()
-
-  return data?.role === "admin"
 }
