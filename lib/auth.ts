@@ -30,8 +30,6 @@ export const authConfig: NextAuthOptions = {
   callbacks: {
     async session({ session, user }) {
 
-      if (session?.user && user) {
-
         session.user.id = user.id
       }
       return session
@@ -44,8 +42,5 @@ export const authConfig: NextAuthOptions = {
     verifyRequest: "/api/auth/verify-request",
   },
 }
-
-
-export const { handlers, auth, signIn, signOut } = NextAuth(authConfig)
 
 
