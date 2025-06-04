@@ -1,5 +1,5 @@
 
-import NextAuth, { type NextAuthOptions } from "next-auth"
+import NextAuth, { type NextAuthOptions, getServerSession } from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
 import EmailProvider from "next-auth/providers/email"
 import { SupabaseAdapter } from "@next-auth/supabase-adapter"
@@ -44,10 +44,15 @@ export const authConfig: NextAuthOptions = {
   },
 }
 
-const nextAuth = NextAuth(authConfig)
+export async function auth() {
+  return getServerSession(authConfig)
+}
 
+const handler = NextAuth(authConfig)
 
-export const { handlers, auth, signIn, signOut } = nextAuth
+export const handlers = { GET: handler, POST: handler }
+
+export { signIn, signOut } from "next-auth/react"
 
 
 
