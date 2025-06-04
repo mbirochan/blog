@@ -1,9 +1,10 @@
+
 import { createClient } from "@supabase/supabase-js"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co"
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder-key"
 
-// Only create client if we have real credentials
+// Only create the client if we have real credentials
 export const supabase = supabaseUrl !== "https://placeholder.supabase.co" && supabaseKey !== "placeholder-key" 
   ? createClient(supabaseUrl, supabaseKey)
   : null
@@ -12,15 +13,22 @@ export const supabase = supabaseUrl !== "https://placeholder.supabase.co" && sup
 export type Post = {
   id: string
   title: string
+  slug: string
   content: string
   excerpt: string
-  slug: string
-  featured_image?: string
+  author_id: string
+  category: string
   published: boolean
+  featured: boolean
+  image_url?: string
+  tags: string[]
   upvotes: number
   created_at: string
   updated_at: string
-  author_id?: string
+  author?: {
+    name: string
+    email: string
+  }
 }
 
 export type Comment = {
@@ -30,7 +38,6 @@ export type Comment = {
   user_id: string
   parent_id?: string
   created_at: string
-  updated_at: string
   user?: {
     name: string
     email: string
@@ -44,5 +51,4 @@ export type Profile = {
   email: string
   role: 'admin' | 'user'
   created_at: string
-  updated_at: string
 }
