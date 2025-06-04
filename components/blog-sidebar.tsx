@@ -20,18 +20,14 @@ import {
 } from "@/components/ui/sidebar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
-import { allPosts, categories } from "@/lib/blog-data"
+import { categories } from "@/lib/blog-data"
 
 export function BlogSidebar() {
   const pathname = usePathname()
   const [searchQuery, setSearchQuery] = useState("")
 
   const filteredPosts = searchQuery
-    ? allPosts.filter(
-        (post) =>
-          post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          post.excerpt.toLowerCase().includes(searchQuery.toLowerCase()),
-      )
+    ? [] // Will be populated with real data later
     : []
 
   return (
@@ -123,9 +119,11 @@ export function BlogSidebar() {
             <SidebarMenu>
               {categories.map((category) => (
                 <SidebarMenuItem key={category.id}>
-                  <SidebarMenuButton>
-                    <Hash className="h-4 w-4" />
-                    <span>{category.name}</span>
+                  <SidebarMenuButton asChild>
+                    <Link href={`/?category=${category.name.toLowerCase()}`}>
+                      <Hash className="h-4 w-4" />
+                      <span>{category.name}</span>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -134,18 +132,17 @@ export function BlogSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Recent Posts</SidebarGroupLabel>
+          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {allPosts.slice(0, 5).map((post) => (
-                <SidebarMenuItem key={post.id}>
-                  <SidebarMenuButton asChild isActive={pathname === `/blog/${post.slug}`}>
-                    <Link href={`/blog/${post.slug}`}>
-                      <span>{post.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname === "/admin"}>
+                  <Link href="/admin">
+                    <Settings className="h-4 w-4" />
+                    <span>Admin</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

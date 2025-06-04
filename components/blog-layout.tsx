@@ -20,22 +20,13 @@ export function BlogLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background">
-      <BlogSidebar />
-      <SidebarInset>
-        <BlogHeader />
-        <AnimatePresence mode="wait">
-          <motion.main
-            key={pathname}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
-            className="content container py-6 md:py-10"
-          >
-            {children}
-          </motion.main>
-        </AnimatePresence>
-      </SidebarInset>
+      <BlogHeader />
+      <div className="flex min-h-screen pt-16">
+        <BlogSidebar />
+        <main className="flex-1 px-6 py-8">
+          {children}
+        </main>
+      </div>
     </div>
   )
 }

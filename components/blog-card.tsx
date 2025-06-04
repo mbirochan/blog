@@ -1,6 +1,3 @@
-"use client"
-
-import { motion } from "framer-motion"
 import Link from "next/link"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -14,7 +11,7 @@ interface BlogCardProps {
 
 export function BlogCard({ post, featured = false }: BlogCardProps) {
   return (
-    <motion.div whileHover={{ y: -5 }} transition={{ type: "spring", stiffness: 300 }}>
+    <div className="h-full transition-transform hover:-translate-y-1 duration-200">
       <Link href={`/blog/${post.slug}`} className="block h-full">
         <Card
           className={cn(
@@ -58,6 +55,6 @@ export function BlogCard({ post, featured = false }: BlogCardProps) {
           </div>
         </Card>
       </Link>
-    </motion.div>
+    </div>
   )
 }
