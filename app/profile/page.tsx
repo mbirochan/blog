@@ -3,8 +3,7 @@ import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { signOut } from "@/lib/auth"
+import { SignOutButton } from "@/components/sign-out-button"
 
 export default async function ProfilePage() {
   const session = await auth()
@@ -62,14 +61,7 @@ export default async function ProfilePage() {
             </div>
 
             <div className="pt-4">
-              <form action={async () => {
-                "use server"
-                await signOut({ redirectTo: "/" })
-              }}>
-                <Button type="submit" variant="outline">
-                  Sign Out
-                </Button>
-              </form>
+              <SignOutButton />
             </div>
           </CardContent>
         </Card>
