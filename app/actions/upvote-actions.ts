@@ -1,3 +1,4 @@
+
 "use server"
 
 import { revalidatePath } from "next/cache"
@@ -7,9 +8,22 @@ import { auth } from "@/lib/auth"
 
 // Function to handle anonymous upvotes
 export async function toggleUpvote(postId: string) {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const upvoteCookie = cookieStore.get(`upvote-${postId}`)
   const hasUpvoted = upvoteCookie?.value === "true"
+
+  if (!supabase) {
+    // In development mode without Supabase, just toggle the cookie
+    if (hasUpvoted) {
+      cookieStore.delete(`upvote-${postId}`)
+    } else {
+      cookieStore.set(`upvote-${postId}`, "true", {
+        maxAge: 60 * 60 * 24 * 365, // 1 year
+        path: "/",
+      })
+    }
+    return { success: true, hasUpvoted: !hasUpvoted }
+  }
 
   try {
     // Get the current upvote count
@@ -29,11 +43,9 @@ export async function toggleUpvote(postId: string) {
 
     // Set or remove the cookie to track the user's upvote
     if (hasUpvoted) {
-      cookies().delete(`upvote-${postId}`)
+      cookieStore.delete(`upvote-${postId}`)
     } else {
-      // Set cookie to remember upvote status
-    const cookieStore = await cookies()
-    cookieStore.set(`upvote-${postId}`, hasUpvoted ? "false" : "true", {
+      cookieStore.set(`upvote-${postId}`, "true", {
         maxAge: 60 * 60 * 24 * 365, // 1 year
         path: "/",
       })
@@ -42,33 +54,18 @@ export async function toggleUpvote(postId: string) {
     // Revalidate the post page
     revalidatePath(`/blog/${postId}`)
 
-    return {
-      success: true,
-      upvotes: newUpvoteCount,
-      hasUpvoted: !hasUpvoted,
-    }
+    return { success: true, hasUpvoted: !hasUpvoted, upvotes: newUpvoteCount }
   } catch (error) {
     console.error("Error toggling upvote:", error)
-    return { error: "Failed to update upvote" }
+    return { error: "Failed to toggle upvote" }
   }
 }
 
-// Function to check if a user has upvoted a post
+// Function to check if user has upvoted
 export async function getUpvoteStatus(postId: string) {
-  try {
-    const session = await auth()
-    const cookieStore = await cookies()
-    const upvoteCookie = cookieStore.get(`upvote-${postId}`)
+  const cookieStore = await cookies()
+  const upvoteCookie = cookieStore.get(`upvote-${postId}`)
+  const hasUpvoted = upvoteCookie?.value === "true"
 
-    return {
-      hasUpvoted: upvoteCookie?.value === "true",
-      isAuthenticated: !!session?.user,
-    }
-  } catch (error) {
-    console.error("Error getting upvote status:", error)
-    return {
-      hasUpvoted: false,
-      isAuthenticated: false,
-    }
-  }
+  return { hasUpvoted }
 }
