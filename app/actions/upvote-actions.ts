@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { cookies } from "next/headers"
 import { supabase } from "@/lib/supabase"
+import { auth } from "@/lib/auth"
 
 // Function to handle anonymous upvotes
 export async function toggleUpvote(postId: string) {

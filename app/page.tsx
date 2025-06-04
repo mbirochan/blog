@@ -1,19 +1,20 @@
 import { BlogLayout } from "@/components/blog-layout"
 import { BlogCard } from "@/components/blog-card"
 import { getPublishedPosts } from "@/app/actions/post-actions"
+import { categories } from "@/lib/blog-data"
 
-export default async function Home({ 
-  searchParams 
-}: { 
-  searchParams: Promise<{ category?: string }> 
-}) {
-  const { category } = await searchParams
+interface HomeProps {
+  searchParams: { category?: string }
+}
+
+export default async function Home({ searchParams }: { searchParams: { category?: string | undefined; }; }) {
+  const category = searchParams?.category
   const allPosts = await getPublishedPosts()
-  
+
   // Filter posts by category if specified
   const posts = category 
     ? allPosts.filter(post => 
-        post.category?.toLowerCase() === category.toLowerCase()
+        post.category?.toLowerCase() === category?.toLowerCase()
       )
     : allPosts
 
@@ -34,7 +35,7 @@ export default async function Home({
             </p>
           </div>
         )}
-        
+
         <section>
           <h2 className="text-3xl font-bold tracking-tight mb-6">
             {category ? `Featured ${category} Posts` : "Featured Posts"}
