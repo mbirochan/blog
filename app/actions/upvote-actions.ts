@@ -30,7 +30,9 @@ export async function toggleUpvote(postId: string) {
     if (hasUpvoted) {
       cookies().delete(`upvote-${postId}`)
     } else {
-      cookies().set(`upvote-${postId}`, "true", {
+      // Set cookie to remember upvote status
+    const cookieStore = await cookies()
+    cookieStore.set(`upvote-${postId}`, hasUpvoted ? "false" : "true", {
         maxAge: 60 * 60 * 24 * 365, // 1 year
         path: "/",
       })

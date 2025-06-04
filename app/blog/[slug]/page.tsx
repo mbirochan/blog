@@ -12,8 +12,9 @@ import { getPostBySlug, getComments } from "@/app/actions/post-actions"
 import { getUpvoteStatus } from "@/app/actions/upvote-actions"
 import { auth } from "@/lib/auth"
 
-export default async function BlogPost({ params }: { params: { slug: string } }) {
-  const post = await getPostBySlug(params.slug)
+export default async function BlogPost({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
+  const post = await getPostBySlug(slug)
 
   if (!post) {
     notFound()

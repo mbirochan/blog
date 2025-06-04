@@ -107,3 +107,97 @@ export async function getComments(postId: string) {
     return { comments: [] }
   }
 }
+"use server"
+
+import { revalidatePath } from "next/cache"
+import { supabase } from "@/lib/supabase"
+import { auth } from "@/lib/auth"
+
+export async function createComment(formData: FormData) {
+  const session = await auth()
+
+  if (!session?.user) {
+    return { error: "You must be logged in to comment" }
+  }
+
+  const content = formData.get("content") as string
+  const postId = formData.get("postId") as string
+  const parentId = formData.get("parentId") as string | null
+
+  if (!content || !postId) {
+    return { error: "Missing required fields" }
+  }
+
+  if (!supabase) {
+    // In development mode, just return success
+    revalidatePath(`/blog/[slug]`, 'page')
+    return { success: true }
+  }
+
+  try {
+    const { error } = await supabase
+      .from("comments")
+      .insert({
+        content,
+        post_id: postId,
+        user_id: session.user.id,
+        parent_id: parentId,
+      })
+
+    if (error) throw error
+
+    revalidatePath(`/blog/[slug]`, 'page')
+    return { success: true }
+  } catch (error) {
+    console.error("Error creating comment:", error)
+    return { error: "Failed to create comment" }
+  }
+}
+
+export async function deleteComment(commentId: string) {
+  const session = await auth()
+
+  if (!session?.user) {
+    return { error: "You must be logged in" }
+  }
+
+  if (!supabase) {
+    return { error: "Database not available in development mode" }
+  }
+
+  try {
+    // Check if user owns the comment or is admin
+    const { data: comment } = await supabase
+      .from("comments")
+      .select("user_id")
+      .eq("id", commentId)
+      .single()
+
+    if (!comment) {
+      return { error: "Comment not found" }
+    }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", session.user.id)
+      .single()
+
+    if (comment.user_id !== session.user.id && profile?.role !== "admin") {
+      return { error: "You can only delete your own comments" }
+    }
+
+    const { error } = await supabase
+      .from("comments")
+      .delete()
+      .eq("id", commentId)
+
+    if (error) throw error
+
+    revalidatePath(`/blog/[slug]`, 'page')
+    return { success: true }
+  } catch (error) {
+    console.error("Error deleting comment:", error)
+    return { error: "Failed to delete comment" }
+  }
+}
