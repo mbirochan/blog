@@ -3,9 +3,8 @@ import NextAuth from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
 import EmailProvider from "next-auth/providers/email"
 import { SupabaseAdapter } from "@next-auth/supabase-adapter"
-import type { NextAuthConfig } from "next-auth"
 
-export const authConfig: NextAuthConfig = {
+const authConfig = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || "",
@@ -46,7 +45,4 @@ export const authConfig: NextAuthConfig = {
   },
 }
 
-const nextAuth = NextAuth(authConfig)
-
-export const { handlers, auth, signIn, signOut } = nextAuth
-export default nextAuth
+export const { handlers, auth, signIn, signOut } = NextAuth(authConfig)
