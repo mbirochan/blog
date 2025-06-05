@@ -1,6 +1,8 @@
 "use client"
 
-import { useState } from "react"
+export const dynamic = "force-dynamic"
+
+import { Suspense, useState } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -11,6 +13,14 @@ import { useToast } from "@/hooks/use-toast"
 import { Separator } from "@/components/ui/separator"
 
 export default function SignInPage() {
+  return (
+    <Suspense>
+      <SignInForm />
+    </Suspense>
+  )
+}
+
+function SignInForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [email, setEmail] = useState("")
   const router = useRouter()
@@ -64,9 +74,9 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
           <CardTitle>Sign In</CardTitle>
           <CardDescription>Choose your preferred sign in method</CardDescription>
         </CardHeader>
@@ -127,4 +137,4 @@ export default function SignInPage() {
       </Card>
     </div>
   )
-} 
+}
