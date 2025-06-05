@@ -1,4 +1,3 @@
-
 import NextAuth, { type NextAuthOptions, getServerSession } from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
 import EmailProvider from "next-auth/providers/email"
@@ -11,15 +10,8 @@ export const authConfig: NextAuthOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
     EmailProvider({
-      server: {
-        host: "smtp.sendgrid.net",
-        port: 587,
-        auth: {
-          user: "apikey",
-          pass: process.env.SENDGRID_API_KEY!,
-        },
-      },
-      from: `${process.env.SENDGRID_FROM_NAME!} <${process.env.SENDGRID_FROM_EMAIL!}>`,
+      server: process.env.EMAIL_SERVER,
+      from: process.env.EMAIL_FROM,
     }),
   ],
   adapter: SupabaseAdapter({

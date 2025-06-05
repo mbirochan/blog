@@ -13,32 +13,38 @@ This project is a Next.js blog platform that uses **NextAuth.js** for authentica
 2. **Create an `.env` file** in the project root with the following variables:
 
    ```
+
+   ```
+
 # NextAuth.js Configuration
+
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 NEXTAUTH_URL=
 NEXTAUTH_SECRET=
 
-   # Email Provider (SMTP)
-   SENDGRID_API_KEY=
-   SENDGRID_FROM_EMAIL=
-   SENDGRID_FROM_NAME=
+# Email Provider (SMTP)
 
-   # Supabase Configuration
-   NEXT_PUBLIC_SUPABASE_URL=
-   SUPABASE_ANON_KEY=
-   SUPABASE_SERVICE_ROLE_KEY=
-   ```
+EMAIL_SERVER=
+EMAIL_FROM=
 
-   Ensure all values are provided or authentication will fail. The `SENDGRID_FROM_EMAIL` must be a verified sender in your SendGrid account.
+# Supabase Configuration
+
+NEXT_PUBLIC_SUPABASE_URL=
+SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+
+````
+
+Ensure all values are provided or authentication will fail. The `SENDGRID_FROM_EMAIL` must be a verified sender in your SendGrid account.
 
 3. **Run the development server**
 
-   ```bash
-   npm run dev
-   ```
+```bash
+npm run dev
+````
 
-   Visit `http://localhost:3000` in your browser.
+Visit `http://localhost:3000` in your browser.
 
 ## Authentication
 
