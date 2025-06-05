@@ -35,7 +35,7 @@ export const authConfig: NextAuthOptions = {
     },
   },
   pages: {
-    signIn: "/api/auth/signin",
+    signIn: "/signin",
     signOut: "/api/auth/signout",
     error: "/api/auth/error",
     verifyRequest: "/api/auth/verify-request",
