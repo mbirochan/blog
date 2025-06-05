@@ -4,6 +4,7 @@ import type React from "react"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { signIn } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
@@ -195,7 +196,7 @@ export function CommentSection({ postId, comments: initialComments, isLoggedIn, 
               <AlertDialogFooter className="flex-col space-y-2 sm:space-y-0">
                 <AlertDialogAction
                   onClick={() =>
-                    router.push("/api/auth/signin?callbackUrl=" + encodeURIComponent(window.location.href))
+                    signIn(undefined, { callbackUrl: window.location.href })
                   }
                 >
                   Sign in with Google or Email
@@ -289,7 +290,7 @@ function CommentItem({
                   <AlertDialogFooter className="flex-col space-y-2 sm:space-y-0">
                     <AlertDialogAction
                       onClick={() =>
-                        router.push("/api/auth/signin?callbackUrl=" + encodeURIComponent(window.location.href))
+                        signIn(undefined, { callbackUrl: window.location.href })
                       }
                     >
                       Sign in with Google or Email
