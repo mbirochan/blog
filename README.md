@@ -13,9 +13,11 @@ This project is a Next.js blog platform that uses **NextAuth.js** for authentica
 2. **Create an `.env` file** in the project root with the following variables:
 
    ```
-   # NextAuth.js Configuration
-   GOOGLE_CLIENT_ID=
-   GOOGLE_CLIENT_SECRET=
+# NextAuth.js Configuration
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+NEXTAUTH_URL=
+NEXTAUTH_SECRET=
 
    # Email Provider (SMTP)
    SENDGRID_API_KEY=
@@ -41,6 +43,7 @@ This project is a Next.js blog platform that uses **NextAuth.js** for authentica
 ## Authentication
 
 - **Google** – OAuth 2.0 credentials from the Google Developer Console are required. Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in your `.env` file.
+- **NextAuth** – Configure `NEXTAUTH_URL` to the base URL of your site and set `NEXTAUTH_SECRET` to a random string. Add `<NEXTAUTH_URL>/api/auth/callback/google` as an authorized redirect URI in the Google Developer Console.
 - **Email** – Uses SendGrid's SMTP service. Provide the `SENDGRID_API_KEY`, `SENDGRID_FROM_EMAIL`, and `SENDGRID_FROM_NAME` variables.
 - **Supabase** – Acts as the database and NextAuth adapter. Supply `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` from your Supabase project.
 
