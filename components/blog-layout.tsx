@@ -2,7 +2,6 @@
 
 import type React from "react"
 
-import { useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { BlogSidebar } from "@/components/blog-sidebar"
 import { BlogHeader } from "@/components/blog-header"
@@ -12,11 +11,6 @@ import { usePathname } from "next/navigation"
 export function BlogLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
 
-  // GSAP animation will be initialized here
-  useEffect(() => {
-    // This would be where we initialize GSAP animations
-    // For example: gsap.from(".content", { opacity: 0, y: 20, duration: 0.5 })
-  }, [])
 
   return (
     <div className="min-h-screen bg-background">
