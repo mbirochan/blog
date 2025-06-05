@@ -277,31 +277,6 @@ export async function getPostBySlug(slug: string) {
   }
 }
 
-export async function getComments(postId: string) {
-  try {
-    const { data, error } = await supabase
-      .from("comments")
-      .select(`
-        *,
-        user:profiles(name, email),
-        replies:comments(
-          *,
-          user:profiles(name, email)
-        )
-      `)
-      .eq("post_id", postId)
-      .is("parent_id", null)
-      .order("created_at", { ascending: false })
-
-    if (error) throw error
-
-    return { comments: data || [] }
-  } catch (error) {
-    console.error("Error fetching comments:", error)
-    return { comments: [] }
-  }
-}
-
 export async function getCategories() {
   if (!supabase) {
     return []
