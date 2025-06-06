@@ -1,6 +1,15 @@
 import nodemailer from 'nodemailer';
 
-const otpStore = new Map(); // In production, use Redis or DB
+// Use a global store so the OTP can be verified by verify-otp/route.ts
+// In production, replace this with a persistent store (e.g. Redis or DB)
+declare global {
+  // eslint-disable-next-line no-var
+  var otpStore: Map<string, { code: string; expires: number }>;
+}
+
+if (!global.otpStore) {
+  global.otpStore = new Map();
+}
 
 export async function POST(req: Request) {
   try {
@@ -26,7 +35,7 @@ export async function POST(req: Request) {
     console.log(`Generated OTP for ${email}: ${otp}`);
 
     // Store OTP temporarily (expires in 5 minutes)
-    otpStore.set(email, { code: otp, expires: Date.now() + 5 * 60 * 1000 });
+    global.otpStore.set(email, { code: otp, expires: Date.now() + 5 * 60 * 1000 });
 
     console.log("Creating nodemailer transporter...");
     const transporter = nodemailer.createTransport({
