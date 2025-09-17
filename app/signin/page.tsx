@@ -1,8 +1,6 @@
 "use client"
 
-export const dynamic = "force-dynamic"
-
-import { useState } from "react"
+import { Suspense, useMemo, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { signIn } from "next-auth/react"
 import { Button } from "@/components/ui/button"
@@ -13,14 +11,18 @@ import { useToast } from "@/components/ui/use-toast"
 
 const ADMIN_EMAIL = "mbirochan@gmail.com"
 
-function SignInForm() {
+function useCallbackUrl() {
+  const searchParams = useSearchParams()
+  return useMemo(() => searchParams.get("callbackUrl") || "/", [searchParams])
+}
+
+function SignInContent() {
   const [isLoading, setIsLoading] = useState(false)
   const [email, setEmail] = useState("")
   const [otp, setOtp] = useState("")
   const [otpSent, setOtpSent] = useState(false)
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const callbackUrl = searchParams.get("callbackUrl") || "/"
+  const callbackUrl = useCallbackUrl()
   const { toast } = useToast()
 
   const handleSendOTP = async (e: React.FormEvent) => {
@@ -144,10 +146,10 @@ function SignInForm() {
               Google
             </Button>
             <div className="relative">
-              <div className="absolute inset-0 flex items-center">
+              <div className="absolute inset-0 flex items.center">
                 <span className="w-full border-t" />
               </div>
-              <div className="relative flex justify-center text-xs uppercase">
+              <div className="relative flex justify.center text-xs uppercase">
                 <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
               </div>
             </div>
@@ -203,6 +205,14 @@ function SignInForm() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+function SignInForm() {
+  return (
+    <Suspense fallback={<div className="py-10 text-center">Loading…</div>}>
+      <SignInContent />
+    </Suspense>
   )
 }
 
