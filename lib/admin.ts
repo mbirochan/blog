@@ -21,6 +21,7 @@ export function isAdminEmail(email?: string | null) {
 
 export async function syncUserRole(userId: string, email?: string | null, name?: string | null) {
   if (!supabaseAdmin || !userId || !email) {
+    console.error("Missing required parameters for syncUserRole:", { userId, email, supabaseAdmin: !!supabaseAdmin })
     return
   }
 
@@ -29,7 +30,8 @@ export async function syncUserRole(userId: string, email?: string | null, name?:
   const role = isAdminEmail(normalizedEmail) ? "admin" : "user"
 
   try {
-    await supabaseAdmin
+    // First, ensure the user exists in the users table
+    const { error: userError } = await supabaseAdmin
       .from("users")
       .upsert(
         {
@@ -41,7 +43,13 @@ export async function syncUserRole(userId: string, email?: string | null, name?:
         { onConflict: "id" },
       )
 
-    await supabaseAdmin
+    if (userError) {
+      console.error("Failed to upsert user:", userError)
+      throw userError
+    }
+
+    // Then, ensure the profile exists in the profiles table
+    const { error: profileError } = await supabaseAdmin
       .from("profiles")
       .upsert(
         {
@@ -52,7 +60,41 @@ export async function syncUserRole(userId: string, email?: string | null, name?:
         },
         { onConflict: "id" },
       )
+
+    if (profileError) {
+      console.error("Failed to upsert profile:", profileError)
+      throw profileError
+    }
+
+    console.log("Successfully synced user role:", { userId, email: normalizedEmail, role })
   } catch (error) {
-    console.error("Failed to sync user role", error)
+    console.error("Failed to sync user role:", error)
+    throw error // Re-throw to let the caller handle it
+  }
+}
+
+export async function ensureUserProfile(userId: string, email?: string | null, name?: string | null) {
+  if (!supabaseAdmin || !userId || !email) {
+    return false
+  }
+
+  try {
+    // Check if profile exists
+    const { data: existingProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .eq("id", userId)
+      .single()
+
+    if (existingProfile) {
+      return true // Profile already exists
+    }
+
+    // Profile doesn't exist, create it
+    await syncUserRole(userId, email, name)
+    return true
+  } catch (error) {
+    console.error("Failed to ensure user profile:", error)
+    return false
   }
 }

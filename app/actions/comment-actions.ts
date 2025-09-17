@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { supabase } from "@/lib/supabase"
 import { supabaseAdmin } from "@/lib/supabase-admin"
-import { isAdminEmail } from "@/lib/admin"
+import { isAdminEmail, ensureUserProfile } from "@/lib/admin"
 import { auth } from "@/lib/auth"
 
 export async function addComment(formData: FormData) {
@@ -27,6 +27,18 @@ export async function addComment(formData: FormData) {
   }
 
   try {
+    // Ensure user profile exists before adding comment
+    const profileExists = await ensureUserProfile(
+      session.user.id,
+      session.user.email,
+      session.user.name
+    )
+
+    if (!profileExists) {
+      console.error("Failed to ensure user profile exists")
+      return { error: "Failed to create user profile" }
+    }
+
     const { data, error } = await supabase
       .from("comments")
       .insert({

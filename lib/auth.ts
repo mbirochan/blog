@@ -120,12 +120,33 @@ export const authConfig: NextAuthOptions = {
 
       // Allow all valid emails to sign in
       if (account?.provider === "google") {
-        // Generate a unique user ID for non-admin users
-        const userId = isAdminEmail(email) ? ADMIN_SUPABASE_USER_ID : user.id
+        // For admin users, use the predefined admin ID
+        // For non-admin users, check if profile exists, otherwise generate new UUID
+        let userId: string
+        
+        if (isAdminEmail(email)) {
+          userId = ADMIN_SUPABASE_USER_ID
+        } else {
+          // Check if user already exists in profiles table
+          const { data: existingProfile } = await supabaseAdmin
+            ?.from("profiles")
+            .select("id")
+            .eq("email", email)
+            .maybeSingle() || { data: null }
+          
+          userId = existingProfile?.id || randomUUID()
+        }
+        
         user.id = userId
         user.email = email
         user.name = user.name || (isAdminEmail(email) ? ADMIN_NAME : email.split('@')[0])
-        await syncUserRole(userId, email, user.name ?? (isAdminEmail(email) ? ADMIN_NAME : email.split('@')[0]))
+        
+        try {
+          await syncUserRole(userId, email, user.name ?? (isAdminEmail(email) ? ADMIN_NAME : email.split('@')[0]))
+        } catch (error) {
+          console.error("Failed to sync user role during sign-in:", error)
+          // Don't block sign-in if profile sync fails, but log the error
+        }
       }
 
       return true
