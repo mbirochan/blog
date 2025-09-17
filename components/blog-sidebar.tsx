@@ -17,6 +17,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  useSidebar,
 } from "@/components/ui/sidebar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
@@ -31,6 +32,7 @@ export function BlogSidebar() {
   const pathname = usePathname()
   const [searchQuery, setSearchQuery] = useState("")
   const [categories, setCategories] = useState<Category[]>([])
+  const { isMobile, setOpenMobile } = useSidebar()
 
   useEffect(() => {
     async function fetchCategories() {
@@ -47,6 +49,13 @@ export function BlogSidebar() {
 
     fetchCategories()
   }, [])
+
+  // Close the mobile sidebar when the route changes
+  useEffect(() => {
+    if (isMobile) {
+      setOpenMobile(false)
+    }
+  }, [pathname, isMobile, setOpenMobile])
 
   const filteredPosts: { id: string; slug: string; title: string }[] = searchQuery
     ? [] // Will be populated with real data later
@@ -107,7 +116,7 @@ export function BlogSidebar() {
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={pathname === "/"}>
-                  <Link href="/">
+                  <Link href="/" onClick={() => isMobile && setOpenMobile(false)}>
                     <Home className="h-4 w-4" />
                     <span>Home</span>
                   </Link>
@@ -115,7 +124,7 @@ export function BlogSidebar() {
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={pathname?.startsWith("/featured")}>
-                  <Link href="/featured">
+                  <Link href="/featured" onClick={() => isMobile && setOpenMobile(false)}>
                     <Sparkles className="h-4 w-4" />
                     <span>Featured</span>
                   </Link>
@@ -137,7 +146,7 @@ export function BlogSidebar() {
                 categories.map((category) => (
                   <SidebarMenuItem key={category.id}>
                     <SidebarMenuButton asChild>
-                      <Link href={`/?category=${category.name.toLowerCase()}`}>
+                      <Link href={`/?category=${category.name.toLowerCase()}`} onClick={() => isMobile && setOpenMobile(false)}>
                         <Hash className="h-4 w-4" />
                         <span>{category.name}</span>
                       </Link>
@@ -155,7 +164,7 @@ export function BlogSidebar() {
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={pathname === "/admin"}>
-                  <Link href="/admin">
+                  <Link href="/admin" onClick={() => isMobile && setOpenMobile(false)}>
                     <Settings className="h-4 w-4" />
                     <span>Admin</span>
                   </Link>
