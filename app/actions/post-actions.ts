@@ -2,138 +2,202 @@
 
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
+import { randomUUID } from "crypto"
+
 import { supabase } from "@/lib/supabase"
+import { isAdminEmail } from "@/lib/admin"
 import { auth } from "@/lib/auth"
 
-// Create or update a post
+type AdminCandidate = {
+  id: string
+  email?: string | null
+}
+
+function normalizeSlug(input: string, fallback = "") {
+  const base = (input || fallback || "")
+    .toString()
+    .trim()
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "") // strip accents
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+
+  return base || `post-${randomUUID()}`
+}
+
+function formatContent(raw: string): string {
+  const base = raw.trim()
+
+  if (!base) {
+    return ""
+  }
+
+  if (/<[^>]+>/.test(base)) {
+    return base
+  }
+
+  return base
+    .split(/\n{2,}/)
+    .map((paragraph) => `<p>${paragraph.trim().replace(/\n/g, "<br />")}</p>`)
+    .join("")
+}
+
+async function ensureAdminAccess(user?: AdminCandidate) {
+  if (!user?.email) {
+    return false
+  }
+
+  if (isAdminEmail(user.email)) {
+    return true
+  }
+
+  if (!supabase) {
+    return false
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle()
+
+  return profile?.role === "admin"
+}
+
 export async function savePost(formData: FormData) {
   const session = await auth()
 
-  // Check if user is admin
   if (!session?.user) {
     return { error: "You must be logged in" }
   }
 
-  if (!supabase) {
-    // Allow admin actions in development mode
-    console.log("Development mode: allowing admin actions")
-  } else {
-    const { data: profile } = await supabase.from("profiles").select("role").eq("id", session.user.id).single()
-
-    if (profile?.role !== "admin") {
-      return { error: "You do not have permission to manage posts" }
-    }
+  if (!(await ensureAdminAccess(session.user))) {
+    return { error: "You do not have permission to manage posts" }
   }
 
-  const id = formData.get("id") as string
-  const title = formData.get("title") as string
-  const slug = formData.get("slug") as string
-  const content = formData.get("content") as string
-  const excerpt = formData.get("excerpt") as string
-  const category = formData.get("category") as string
-  const imageUrl = formData.get("imageUrl") as string
+  const id = ((formData.get("id") as string) || "").trim()
+  const title = ((formData.get("title") as string) || "").trim()
+  const rawSlug = ((formData.get("slug") as string) || "").trim()
+  const excerpt = ((formData.get("excerpt") as string) || "").trim()
+  const category = ((formData.get("category") as string) || "").trim()
+  const imageUrl = ((formData.get("imageUrl") as string) || "").trim()
+  const content = (formData.get("content") as string) || ""
   const published = formData.get("published") === "true"
 
-  if (!title || !slug || !content || !excerpt) {
+  const slug = normalizeSlug(rawSlug, title)
+  const normalizedContent = formatContent(content)
+
+  if (!title || !slug || !normalizedContent || !excerpt) {
     return { error: "Missing required fields" }
   }
 
+  if (!supabase) {
+    return { error: "Supabase client not configured" }
+  }
+
   try {
-    // Check if slug is unique (except for the current post)
-    const { data: existingPost } = await supabase
+    const { data: conflict } = await supabase
       .from("posts")
       .select("id")
       .eq("slug", slug)
       .neq("id", id || "")
       .maybeSingle()
 
-    if (existingPost) {
+    if (conflict) {
       return { error: "A post with this slug already exists" }
     }
 
-    let result
+    let previousSlug: string | null = null
 
     if (id) {
-      // Update existing post
-      result = await supabase
+      const { data: existing } = await supabase
         .from("posts")
-        .update({
-          title,
-          slug,
-          content,
-          excerpt,
-          category,
-          image_url: imageUrl,
-          published,
-          updated_at: new Date().toISOString(),
-        })
+        .select("slug")
         .eq("id", id)
-        .select()
-    } else {
-      // Create new post
-      result = await supabase
-        .from("posts")
-        .insert({
-          title,
-          slug,
-          content,
-          excerpt,
-          category,
-          image_url: imageUrl,
-          published,
-          author_id: session.user.id,
-          upvotes: 0,
-        })
-        .select()
+        .maybeSingle()
+
+      if (!existing) {
+        return { error: "Post not found" }
+      }
+
+      previousSlug = existing.slug
     }
+
+    const payload = {
+      title,
+      slug,
+      content: normalizedContent,
+      excerpt,
+      category: category || null,
+      image_url: imageUrl || null,
+      published,
+    }
+
+    const result = id
+      ? await supabase
+          .from("posts")
+          .update({
+            ...payload,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", id)
+          .select()
+      : await supabase
+          .from("posts")
+          .insert({
+            ...payload,
+            author_id: session.user.id,
+            upvotes: 0,
+          })
+          .select()
 
     if (result.error) throw result.error
 
-    // Revalidate paths
     revalidatePath("/admin")
     revalidatePath("/")
-    if (id) revalidatePath(`/blog/${slug}`)
+    if (previousSlug && previousSlug !== slug) {
+      revalidatePath(`/blog/${previousSlug}`)
+    }
+    revalidatePath(`/blog/${slug}`)
 
-    return { success: true, post: result.data[0] }
+    return { success: true, post: result.data?.[0] }
   } catch (error) {
     console.error("Error saving post:", error)
     return { error: "Failed to save post" }
   }
 }
 
-// Delete a post
 export async function deletePost(id: string) {
   const session = await auth()
 
-  // Check if user is admin
   if (!session?.user) {
     return { error: "You must be logged in" }
   }
 
-  if (!supabase) {
-    return { error: "Database not available in development mode" }
-  } else {
-    const { data: profile } = await supabase.from("profiles").select("role").eq("id", session.user.id).single()
+  if (!(await ensureAdminAccess(session.user))) {
+    return { error: "You do not have permission to delete posts" }
+  }
 
-    if (profile?.role !== "admin") {
-      return { error: "You do not have permission to delete posts" }
-    }
+  if (!supabase) {
+    return { error: "Supabase client not configured" }
   }
 
   try {
-    // Get the post slug for revalidation
-    const { data: post } = await supabase.from("posts").select("slug").eq("id", id).single()
+    const { data: post } = await supabase
+      .from("posts")
+      .select("slug")
+      .eq("id", id)
+      .maybeSingle()
 
     if (!post) {
       return { error: "Post not found" }
     }
 
-    // Delete the post
     const { error } = await supabase.from("posts").delete().eq("id", id)
 
     if (error) throw error
 
-    // Revalidate paths
     revalidatePath("/admin")
     revalidatePath("/")
     revalidatePath(`/blog/${post.slug}`)
@@ -145,34 +209,32 @@ export async function deletePost(id: string) {
   }
 }
 
-// Toggle post published status
 export async function togglePublishStatus(id: string) {
   const session = await auth()
 
-  // Check if user is admin
   if (!session?.user) {
     return { error: "You must be logged in" }
   }
 
-  if (!supabase) {
-    return { error: "Database not available in development mode" }
-  } else {
-    const { data: profile } = await supabase.from("profiles").select("role").eq("id", session.user.id).single()
+  if (!(await ensureAdminAccess(session.user))) {
+    return { error: "You do not have permission to publish posts" }
+  }
 
-    if (profile?.role !== "admin") {
-      return { error: "You do not have permission to publish posts" }
-    }
+  if (!supabase) {
+    return { error: "Supabase client not configured" }
   }
 
   try {
-    // Get the current post
-    const { data: post } = await supabase.from("posts").select("published, slug").eq("id", id).single()
+    const { data: post } = await supabase
+      .from("posts")
+      .select("id, slug, published")
+      .eq("id", id)
+      .maybeSingle()
 
     if (!post) {
       return { error: "Post not found" }
     }
 
-    // Toggle the published status
     const { error } = await supabase
       .from("posts")
       .update({
@@ -183,7 +245,6 @@ export async function togglePublishStatus(id: string) {
 
     if (error) throw error
 
-    // Revalidate paths
     revalidatePath("/admin")
     revalidatePath("/")
     revalidatePath(`/blog/${post.slug}`)
@@ -195,25 +256,19 @@ export async function togglePublishStatus(id: string) {
   }
 }
 
-// Get all posts (for admin)
 export async function getAllPosts() {
   const session = await auth()
 
-  // Check if user is admin
   if (!session?.user) {
-    redirect("/admin/login")
+    redirect("/signin?callbackUrl=/admin")
   }
 
-  if (supabase) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", session.user.id)
-      .single()
+  if (!(await ensureAdminAccess(session.user))) {
+    redirect("/signin?callbackUrl=/admin")
+  }
 
-    if (profile?.role !== "admin") {
-      redirect("/admin/login")
-    }
+  if (!supabase) {
+    return []
   }
 
   try {
@@ -234,7 +289,6 @@ export async function getAllPosts() {
   }
 }
 
-// Get published posts (for public)
 export async function getPublishedPosts() {
   if (!supabase) {
     return []
@@ -259,18 +313,28 @@ export async function getPublishedPosts() {
   }
 }
 
-// Get a single post by slug
-export async function getPostBySlug(slug: string) {
+export async function getPostBySlug(slugParam: string) {
   if (!supabase) {
     return null
   }
 
+  const slug = normalizeSlug(slugParam)
+
   try {
-    const { data, error } = await supabase.from("posts").select("*").eq("slug", slug).single()
+    const { data, error } = await supabase
+      .from("posts")
+      .select("*")
+      .eq("slug", slug)
+      .maybeSingle()
 
-    if (error) throw error
+    if (error) {
+      if ("code" in error && error.code === "PGRST116") {
+        return null
+      }
+      throw error
+    }
 
-    return data
+    return data ?? null
   } catch (error) {
     console.error("Error fetching post:", error)
     return null
@@ -290,7 +354,7 @@ export async function getCategories() {
 
     if (error) throw error
 
-    const unique = Array.from(new Set(data.map((p) => p.category as string)))
+    const unique = Array.from(new Set((data || []).map((p) => (p.category as string) ?? "")))
       .filter(Boolean)
       .map((name) => ({ id: name, name }))
 

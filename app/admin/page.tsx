@@ -1,4 +1,3 @@
-
 import { redirect } from "next/navigation"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { auth } from "@/lib/auth"
@@ -6,29 +5,45 @@ import { PostsList } from "@/components/admin/posts-list"
 import { PostEditor } from "@/components/admin/post-editor"
 import { CommentsList } from "@/components/admin/comments-list"
 import { getAllPosts } from "@/app/actions/post-actions"
+import { isAdminEmail } from "@/lib/admin"
+import { supabase } from "@/lib/supabase"
 
-// Helper function to check if user is admin
-async function checkIsAdmin(userId: string) {
-  // Mock admin check - in a real app this would check the database
-  return true
+type AdminCandidate = {
+  id: string
+  email?: string | null
+}
+
+async function checkIsAdmin(user: AdminCandidate) {
+  if (isAdminEmail(user.email)) {
+    return true
+  }
+
+  if (!supabase) {
+    return false
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single()
+
+  return profile?.role === "admin"
 }
 
 export default async function AdminPage() {
   const session = await auth()
 
-  // If not logged in, redirect to login
   if (!session?.user) {
-    redirect("/admin/login")
+    redirect("/signin?callbackUrl=/admin")
   }
 
-  // Check if user is admin
-  const isAdmin = await checkIsAdmin(session.user.id)
+  const isAdmin = await checkIsAdmin(session.user)
 
   if (!isAdmin) {
-    redirect("/admin/login")
+    redirect("/signin?callbackUrl=/admin")
   }
 
-  // Get all posts for admin
   const posts = await getAllPosts()
 
   return (
@@ -48,7 +63,7 @@ export default async function AdminPage() {
         </TabsContent>
 
         <TabsContent value="new">
-          <h2 className="text-2xl font-bold mb-6">Create New Post</h2>
+          <h2 className="mb-6 text-2xl font-bold">Create New Post</h2>
           <PostEditor />
         </TabsContent>
 

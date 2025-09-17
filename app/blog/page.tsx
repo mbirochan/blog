@@ -13,21 +13,17 @@ import { getComments } from "@/app/actions/comment-actions"
 import { getUpvoteStatus } from "@/app/actions/upvote-actions"
 import { auth } from "@/lib/auth"
 
-export default async function BlogPost({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params
+export default async function BlogPost({ params }: { params: { slug: string } }) {
+  const { slug } = params
   const post = await getPostBySlug(slug)
 
   if (!post) {
     notFound()
   }
 
-  // Get upvote status
   const { upvotes, hasUpvoted } = await getUpvoteStatus(post.id)
-
-  // Get comments
   const { comments } = await getComments(post.id)
 
-  // Get current user
   const session = await auth()
   const isLoggedIn = !!session?.user
   const currentUser = session?.user
@@ -37,12 +33,8 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
       }
     : null
 
-  // For demo purposes, let's create an array of images
   const postImages = post.image_url
-    ? [
-        post.image_url,
-        "/placeholder.svg?height=600&width=800&text=Another+Image",
-      ]
+    ? [post.image_url]
     : []
 
   return (
@@ -67,7 +59,7 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
             </div>
             <div className="flex items-center text-sm text-muted-foreground">
               <Clock className="mr-1 h-3 w-3" />
-              <span>{Math.ceil(post.content.length / 1000)} min read</span>
+              <span>{Math.ceil((post.content?.length ?? 0) / 1000)} min read</span>
             </div>
           </div>
 

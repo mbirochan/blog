@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -26,21 +26,34 @@ interface PostEditorProps {
 
 export function PostEditor({ post }: PostEditorProps) {
   const [isLoading, setIsLoading] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
+  const [imageUrl, setImageUrl] = useState(post?.image_url ?? "")
+  const formRef = useRef<HTMLFormElement>(null)
   const router = useRouter()
   const { toast } = useToast()
 
-  const handleSubmit = async (e: React.FormEvent, published: boolean) => {
-    e.preventDefault()
+  const submitPost = async (publish: boolean) => {
+    if (!formRef.current) {
+      return
+    }
+
+    if (isUploading) {
+      toast({
+        title: "Image upload in progress",
+        description: "Please wait until the image upload completes before saving.",
+      })
+      return
+    }
+
     setIsLoading(true)
 
-    const formData = new FormData(e.target as HTMLFormElement)
+    const formData = new FormData(formRef.current)
 
-    // Add the published status
-    formData.append("published", published.toString())
+    formData.set("published", publish.toString())
+    formData.set("imageUrl", imageUrl)
 
-    // Add the post ID if editing
     if (post?.id) {
-      formData.append("id", post.id)
+      formData.set("id", post.id)
     }
 
     try {
@@ -52,7 +65,7 @@ export function PostEditor({ post }: PostEditorProps) {
 
       toast({
         title: post?.id ? "Post updated" : "Post created",
-        description: published ? "Your post has been published." : "Your post has been saved as a draft.",
+        description: publish ? "Your post has been published." : "Your post has been saved as a draft.",
       })
 
       router.push("/admin")
@@ -68,8 +81,58 @@ export function PostEditor({ post }: PostEditorProps) {
     }
   }
 
+  const handleDraftSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    await submitPost(false)
+  }
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+
+    if (!file || isLoading) {
+      return
+    }
+
+    setIsUploading(true)
+
+    try {
+      const payload = new FormData()
+      payload.append("file", file)
+
+      const response = await fetch("/api/admin/upload", {
+        method: "POST",
+        body: payload,
+      })
+
+      const result = await response.json()
+
+      if (!response.ok || !result?.url) {
+        throw new Error(result?.error || "Failed to upload image")
+      }
+
+      setImageUrl(result.url)
+
+      toast({
+        title: "Image uploaded",
+        description: "The featured image is ready to use.",
+      })
+    } catch (error) {
+      console.error("Error uploading image", error)
+      toast({
+        title: "Upload failed",
+        description: "Could not upload the image. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsUploading(false)
+      if (event.target instanceof HTMLInputElement) {
+        event.target.value = ""
+      }
+    }
+  }
+
   return (
-    <form onSubmit={(e) => handleSubmit(e, false)} className="space-y-6">
+    <form ref={formRef} onSubmit={handleDraftSubmit} className="space-y-6">
       <div className="space-y-2">
         <Label htmlFor="title">Title</Label>
         <Input id="title" name="title" placeholder="Post title" defaultValue={post?.title || ""} required />
@@ -116,20 +179,56 @@ export function PostEditor({ post }: PostEditorProps) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="imageUrl">Featured Image URL</Label>
+        <Label htmlFor="imageUrl">Featured Image</Label>
         <Input
           id="imageUrl"
           name="imageUrl"
           placeholder="https://example.com/image.jpg"
-          defaultValue={post?.image_url || ""}
+          value={imageUrl}
+          onChange={(event) => setImageUrl(event.target.value)}
         />
+        <p className="text-sm text-muted-foreground">
+          Paste an image URL or upload a file to populate it automatically.
+        </p>
+        <Input
+          id="imageUpload"
+          type="file"
+          accept="image/*"
+          onChange={handleFileUpload}
+          disabled={isUploading || isLoading}
+        />
+        {isUploading && <p className="text-sm text-muted-foreground">Uploading image...</p>}
+        {imageUrl && (
+          <div className="space-y-2 rounded-md border p-2">
+            <img src={imageUrl} alt="Featured preview" className="h-40 w-full rounded-md object-cover" />
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setImageUrl("")}
+                disabled={isUploading || isLoading}
+              >
+                Remove image
+              </Button>
+              <a
+                href={imageUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-primary underline"
+              >
+                View full size
+              </a>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex gap-2">
-        <Button type="submit" variant="outline" disabled={isLoading}>
+        <Button type="submit" variant="outline" disabled={isLoading || isUploading}>
           {isLoading ? "Saving..." : "Save as Draft"}
         </Button>
-        <Button type="button" onClick={(e) => handleSubmit(e, true)} disabled={isLoading}>
+        <Button type="button" onClick={() => submitPost(true)} disabled={isLoading || isUploading}>
           {isLoading ? "Publishing..." : "Publish"}
         </Button>
       </div>

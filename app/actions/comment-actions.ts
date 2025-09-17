@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { supabase } from "@/lib/supabase"
+import { isAdminEmail } from "@/lib/admin"
 import { auth } from "@/lib/auth"
 
 export async function addComment(formData: FormData) {
@@ -71,7 +72,7 @@ export async function deleteComment(commentId: string) {
     // Check if user is admin
     const { data: profile } = await supabase.from("profiles").select("role").eq("id", session.user.id).single()
 
-    const isAdmin = profile?.role === "admin"
+    const isAdmin = isAdminEmail(session.user.email) || profile?.role === "admin"
 
     // Only allow deletion if user is the author or an admin
     if (comment.user_id !== session.user.id && !isAdmin) {

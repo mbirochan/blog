@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/components/ui/use-toast"
 
+const ADMIN_EMAIL = "mbirochan@gmail.com"
+
 function SignInForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [email, setEmail] = useState("")
@@ -23,23 +25,35 @@ function SignInForm() {
 
   const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault()
+    const normalizedEmail = email.trim().toLowerCase()
+
+    if (normalizedEmail !== ADMIN_EMAIL) {
+      toast({
+        title: "Unauthorized",
+        description: "Only the admin email can request an OTP.",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsLoading(true)
 
     try {
       const response = await fetch("/api/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: normalizedEmail }),
       })
 
       if (!response.ok) {
         throw new Error("Failed to send OTP")
       }
 
+      setEmail(normalizedEmail)
       setOtpSent(true)
       toast({
         title: "OTP Sent",
-        description: "Please check your email for the OTP code.",
+        description: "Please check your inbox (and spam folder) for the code.",
       })
     } catch (error) {
       toast({
@@ -57,21 +71,11 @@ function SignInForm() {
     setIsLoading(true)
 
     try {
-      const response = await fetch("/api/verify-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, otp }),
-      })
-
-      if (!response.ok) {
-        throw new Error("Invalid OTP")
-      }
-
-      // If OTP is valid, proceed with sign in
-      const result = await signIn("email", {
-        email,
-        callbackUrl,
+      const result = await signIn("otp", {
+        email: email.trim().toLowerCase(),
+        otp: otp.trim(),
         redirect: false,
+        callbackUrl,
       })
 
       if (result?.error) {
@@ -93,11 +97,15 @@ function SignInForm() {
   const handleGoogleSignIn = async () => {
     setIsLoading(true)
     try {
-      await signIn("google", { callbackUrl })
+      const result = await signIn("google", { callbackUrl, redirect: false })
+      if (result?.error) {
+        throw new Error(result.error)
+      }
+      router.push(callbackUrl)
     } catch (error) {
       toast({
         title: "Error",
-        description: "Something went wrong. Please try again.",
+        description: "Google sign-in failed. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -110,17 +118,11 @@ function SignInForm() {
       <Card className="w-[350px]">
         <CardHeader>
           <CardTitle>Sign In</CardTitle>
-          <CardDescription>
-            Choose your preferred sign in method
-          </CardDescription>
+          <CardDescription>Choose your preferred sign in method</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4">
-            <Button
-              variant="outline"
-              onClick={handleGoogleSignIn}
-              disabled={isLoading}
-            >
+            <Button variant="outline" onClick={handleGoogleSignIn} disabled={isLoading}>
               <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
                 <path
                   d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -146,9 +148,7 @@ function SignInForm() {
                 <span className="w-full border-t" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  Or continue with
-                </span>
+                <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
               </div>
             </div>
             {!otpSent ? (
@@ -158,7 +158,7 @@ function SignInForm() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="name@example.com"
+                    placeholder="mbirochan@gmail.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -189,7 +189,10 @@ function SignInForm() {
                   type="button"
                   variant="ghost"
                   className="w-full"
-                  onClick={() => setOtpSent(false)}
+                  onClick={() => {
+                    setOtpSent(false)
+                    setOtp("")
+                  }}
                   disabled={isLoading}
                 >
                   Back to Email
