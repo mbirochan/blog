@@ -9,5 +9,11 @@ export default async function AdminLoginPage() {
     redirect("/admin")
   }
 
-  redirect("/signin?callbackUrl=/admin")
+  // If user is signed in but not admin, redirect to home page
+  if (session?.user) {
+    redirect("/")
+  }
+
+  // If not signed in, redirect to signin without admin callback
+  redirect("/signin")
 }

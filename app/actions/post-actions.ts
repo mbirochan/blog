@@ -320,11 +320,11 @@ export async function getAllPosts() {
   const session = await auth()
 
   if (!session?.user) {
-    redirect("/signin?callbackUrl=/admin")
+    redirect("/signin")
   }
 
   if (!(await ensureAdminAccess(session.user))) {
-    redirect("/signin?callbackUrl=/admin")
+    redirect("/")
   }
 
   if (!supabase) {

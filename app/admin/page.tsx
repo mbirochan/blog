@@ -35,13 +35,13 @@ export default async function AdminPage() {
   const session = await auth()
 
   if (!session?.user) {
-    redirect("/signin?callbackUrl=/admin")
+    redirect("/signin")
   }
 
   const isAdmin = await checkIsAdmin(session.user)
 
   if (!isAdmin) {
-    redirect("/signin?callbackUrl=/admin")
+    redirect("/")
   }
 
   const posts = await getAllPosts()

@@ -40,13 +40,13 @@ export default async function EditPostPage({ params }: { params: { id: string } 
   const session = await auth()
 
   if (!session?.user) {
-    redirect("/signin?callbackUrl=/admin")
+    redirect("/signin")
   }
 
   const isAdmin = await verifyAdmin(session.user)
 
   if (!isAdmin) {
-    redirect("/signin?callbackUrl=/admin")
+    redirect("/")
   }
 
   const post = await getPostById(params.id)
