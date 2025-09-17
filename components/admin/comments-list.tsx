@@ -177,7 +177,7 @@ export function CommentsList() {
         const formattedDate =
           createdAtDate && !Number.isNaN(createdAtDate.getTime())
             ? createdAtDate.toLocaleDateString()
-            : "—"
+            : "Unknown date"
         const postId = comment.post?.id ?? null
         const postSlug = comment.post?.slug ?? null
         const hasPostLink = Boolean(postSlug)

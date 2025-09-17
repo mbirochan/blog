@@ -34,25 +34,21 @@ export function BlogSidebar() {
 
   useEffect(() => {
     async function fetchCategories() {
-      if (!supabase) return
-      const { data, error } = await supabase
-        .from("posts")
-        .select("category")
-        .eq("published", true)
-        .neq("category", null)
-
-      if (!error && data) {
-        const unique = Array.from(new Set(data.map((p) => p.category as string)))
-          .filter(Boolean)
-          .map((name) => ({ id: name, name }))
-        setCategories(unique)
+      try {
+        const res = await fetch("/api/categories", { cache: "no-store" })
+        if (!res.ok) return
+        const json = await res.json()
+        const list = Array.isArray(json?.categories) ? json.categories : []
+        setCategories(list)
+      } catch (e) {
+        // noop
       }
     }
 
     fetchCategories()
   }, [])
 
-  const filteredPosts = searchQuery
+  const filteredPosts: { id: string; slug: string; title: string }[] = searchQuery
     ? [] // Will be populated with real data later
     : []
 
@@ -125,19 +121,7 @@ export function BlogSidebar() {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton>
-                  <Bookmark className="h-4 w-4" />
-                  <span>Bookmarks</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton>
-                  <Calendar className="h-4 w-4" />
-                  <span>Archive</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
+              </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
@@ -145,16 +129,22 @@ export function BlogSidebar() {
           <SidebarGroupLabel>Categories</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {categories.map((category) => (
-                <SidebarMenuItem key={category.id}>
-                  <SidebarMenuButton asChild>
-                    <Link href={`/?category=${category.name.toLowerCase()}`}>
-                      <Hash className="h-4 w-4" />
-                      <span>{category.name}</span>
-                    </Link>
-                  </SidebarMenuButton>
+              {categories.length === 0 ? (
+                <SidebarMenuItem>
+                  <div className="px-2 py-1.5 text-sm text-muted-foreground">No categories</div>
                 </SidebarMenuItem>
-              ))}
+              ) : (
+                categories.map((category) => (
+                  <SidebarMenuItem key={category.id}>
+                    <SidebarMenuButton asChild>
+                      <Link href={`/?category=${category.name.toLowerCase()}`}>
+                        <Hash className="h-4 w-4" />
+                        <span>{category.name}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

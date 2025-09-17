@@ -1,8 +1,11 @@
 import { createClient } from "@supabase/supabase-js"
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
+// Prefer public env vars in the browser; fall back to server vars on the server
+const supabaseUrl =
+  process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || ""
 
-const supabaseKey = process.env.SUPABASE_ANON_KEY || ""
+const supabaseKey =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || ""
 
 // Only create the client if credentials are provided
 export const supabase = supabaseUrl && supabaseKey

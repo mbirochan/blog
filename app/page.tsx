@@ -3,15 +3,16 @@ import { BlogCard } from "@/components/blog-card"
 import { getPublishedPosts } from "@/app/actions/post-actions"
 
 interface HomeProps {
-  searchParams?: {
+  searchParams?: Promise<{
     category?: string
-  }
+  }>
 }
 
 const RECENT_POST_LIMIT = 6
 
 export default async function Home({ searchParams }: HomeProps) {
-  const category = searchParams?.category
+  const resolvedSearchParams = searchParams ? await searchParams : undefined
+  const category = resolvedSearchParams?.category
   const allPosts = await getPublishedPosts()
 
   const posts = category
