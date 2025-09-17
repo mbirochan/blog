@@ -62,9 +62,13 @@ const fallbackUrl = priorityUrls.length > 0 ? priorityUrls[0] : undefined
 
 const resolvedSiteUrl =
   priorityUrls.find((url) => url && !isLoopbackHost(url)) ??
-  fallbackUrl ??
   discoverLocalNetworkUrl() ??
+  fallbackUrl ??
   "http://localhost:3000"
+
+if (!process.env.AUTH_TRUST_HOST) {
+  process.env.AUTH_TRUST_HOST = "true"
+}
 
 if (!process.env.NEXTAUTH_URL || isLoopbackHost(process.env.NEXTAUTH_URL)) {
   process.env.NEXTAUTH_URL = resolvedSiteUrl
