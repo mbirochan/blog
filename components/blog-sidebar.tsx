@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { motion } from "framer-motion"
-import { Bookmark, Calendar, Hash, Home, Search, Settings, Sparkles, User } from "lucide-react"
+import { Hash, Home, Settings, Sparkles, User } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -20,8 +19,6 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Input } from "@/components/ui/input"
-import { supabase } from "@/lib/supabase"
 
 interface Category {
   id: string
@@ -30,7 +27,6 @@ interface Category {
 
 export function BlogSidebar() {
   const pathname = usePathname()
-  const [searchQuery, setSearchQuery] = useState("")
   const [categories, setCategories] = useState<Category[]>([])
   const { isMobile, setOpenMobile } = useSidebar()
 
@@ -57,10 +53,6 @@ export function BlogSidebar() {
     }
   }, [pathname, isMobile, setOpenMobile])
 
-  const filteredPosts: { id: string; slug: string; title: string }[] = searchQuery
-    ? [] // Will be populated with real data later
-    : []
-
   return (
     <Sidebar>
       <SidebarHeader>
@@ -73,41 +65,6 @@ export function BlogSidebar() {
             <h3 className="font-medium">Birochan Mainali</h3>
             <p className="text-xs text-muted-foreground">Personal thoughts & ideas</p>
           </div>
-        </div>
-        <div className="px-2 pb-2 hidden md:block">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search posts..."
-              className="w-full pl-8"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          {searchQuery && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="mt-2 max-h-[200px] overflow-auto rounded-md border bg-popover p-2 text-sm"
-            >
-              {filteredPosts.length > 0 ? (
-                filteredPosts.map((post) => (
-                  <Link
-                    key={post.id}
-                    href={`/blog/${post.slug}`}
-                    className="block rounded-md px-2 py-1.5 hover:bg-accent"
-                    onClick={() => setSearchQuery("")}
-                  >
-                    {post.title}
-                  </Link>
-                ))
-              ) : (
-                <p className="px-2 py-1.5 text-muted-foreground">No posts found</p>
-              )}
-            </motion.div>
-          )}
         </div>
       </SidebarHeader>
       <SidebarContent>
