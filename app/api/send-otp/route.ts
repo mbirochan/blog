@@ -1,5 +1,4 @@
 import nodemailer from "nodemailer"
-import { isAdminEmail } from "@/lib/admin"
 import { supabase } from "@/lib/supabase"
 
 const gmailUser = process.env.GMAIL_USER
@@ -15,9 +14,7 @@ export async function POST(req: Request) {
       return new Response(JSON.stringify({ error: "Email is required" }), { status: 400 })
     }
 
-    if (!isAdminEmail(email)) {
-      return new Response(JSON.stringify({ error: "Email not authorized" }), { status: 403 })
-    }
+    // Allow OTP for any valid email
 
     if (!gmailUser || !gmailPassword) {
       console.error("Missing Gmail SMTP credentials")
@@ -56,17 +53,17 @@ export async function POST(req: Request) {
 
     await transporter.sendMail({
       to: email,
-      from: `"Birochan Mainali" <${gmailUser}>`,
-      subject: "Your OTP Code for Logging into Birochan Mainali's Blog site",
+      from: `"Sign-in" <${gmailUser}>`,
+      subject: "Your sign-in code",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h1 style="color: #333;">Your OTP Code for Logging into Birochan Mainali's Blog site is:</h1>
-          <p style="font-size: 18px;">Your one-time password is:</p>
-          <div style="background-color: #f5f5f5; padding: 20px; border-radius: 5px; text-align: center; font-size: 24px; letter-spacing: 5px; margin: 20px 0;">
-            <strong>${otp}</strong>
+          <h1 style="color: #333; margin-bottom: 8px;">Your sign-in code</h1>
+          <p style="font-size: 16px; margin: 0;">Use this one-time code to sign in:</p>
+          <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; text-align: center; font-size: 24px; letter-spacing: 6px; margin: 16px 0; font-weight: bold;">
+            ${otp}
           </div>
-          <p style="color: #666;">This code will expire in 5 minutes.</p>
-          <p style="color: #666;">If you didn't request this code, please ignore this email.</p>
+          <p style="color: #666; font-size: 14px; margin: 0 0 8px 0;">This code expires in 5 minutes.</p>
+          <p style="color: #666; font-size: 14px; margin: 0;">If you didn't request this, you can ignore this email.</p>
         </div>
       `,
     })

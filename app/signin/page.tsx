@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/components/ui/use-toast"
 
-const ADMIN_EMAIL = "mbirochan@gmail.com"
 
 function useCallbackUrl() {
   const searchParams = useSearchParams()
@@ -29,14 +28,7 @@ function SignInContent() {
     event.preventDefault()
     const normalizedEmail = email.trim().toLowerCase()
 
-    if (normalizedEmail !== ADMIN_EMAIL) {
-      toast({
-        title: "Unauthorized",
-        description: "Only the admin email can request an OTP.",
-        variant: "destructive",
-      })
-      return
-    }
+    // Allow OTP for any email
 
     setIsLoading(true)
 
@@ -160,7 +152,7 @@ function SignInContent() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="mbirochan@gmail.com"
+                    placeholder="your@email.com"
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
                     required

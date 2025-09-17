@@ -1,6 +1,7 @@
 import NextAuth, { type NextAuthOptions, getServerSession } from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
 import CredentialsProvider from "next-auth/providers/credentials"
+import { randomUUID } from "crypto"
 
 import { ADMIN_SUPABASE_USER_ID, isAdminEmail, syncUserRole } from "./admin"
 import { supabaseAdmin } from "./supabase-admin"
@@ -34,7 +35,6 @@ const ADMIN_NAME = process.env.ADMIN_NAME || "Birochan Mainali"
 export const authConfig: NextAuthOptions = {
   debug: true,
   secret: process.env.NEXTAUTH_SECRET,
-  trustHost: true,
   session: {
     strategy: "jwt",
   },
@@ -58,10 +58,6 @@ export const authConfig: NextAuthOptions = {
           throw new Error("Missing email or OTP")
         }
 
-        if (!isAdminEmail(email)) {
-          throw new Error("Email not authorized")
-        }
-
         if (!supabaseAdmin) {
           throw new Error("Supabase admin client unavailable")
         }
@@ -82,12 +78,23 @@ export const authConfig: NextAuthOptions = {
         }
 
         await supabaseAdmin.from("auth_email_otps").delete().eq("email", email)
-        await syncUserRole(ADMIN_SUPABASE_USER_ID, email, ADMIN_NAME)
+
+        // Reuse existing profile id if available; otherwise generate a new UUID
+        const { data: existingProfile } = await supabaseAdmin
+          .from("profiles")
+          .select("id, name")
+          .eq("email", email)
+          .maybeSingle()
+
+        const userId = existingProfile?.id || randomUUID()
+        const displayName = existingProfile?.name || email.split("@")[0]
+
+        await syncUserRole(userId, email, displayName)
 
         return {
-          id: ADMIN_SUPABASE_USER_ID,
+          id: isAdminEmail(email) ? ADMIN_SUPABASE_USER_ID : userId,
           email,
-          name: ADMIN_NAME,
+          name: isAdminEmail(email) ? ADMIN_NAME : displayName,
         }
       },
     }),
@@ -107,24 +114,27 @@ export const authConfig: NextAuthOptions = {
     async signIn({ user, account }) {
       const email = user?.email?.trim().toLowerCase()
 
-      if (!email || !isAdminEmail(email)) {
+      if (!email) {
         return false
       }
 
+      // Allow all valid emails to sign in
       if (account?.provider === "google") {
-        user.id = ADMIN_SUPABASE_USER_ID
+        // Generate a unique user ID for non-admin users
+        const userId = isAdminEmail(email) ? ADMIN_SUPABASE_USER_ID : user.id
+        user.id = userId
         user.email = email
-        user.name = user.name || ADMIN_NAME
-        await syncUserRole(ADMIN_SUPABASE_USER_ID, email, user.name ?? ADMIN_NAME)
+        user.name = user.name || (isAdminEmail(email) ? ADMIN_NAME : email.split('@')[0])
+        await syncUserRole(userId, email, user.name ?? (isAdminEmail(email) ? ADMIN_NAME : email.split('@')[0]))
       }
 
       return true
     },
     async jwt({ token, user }) {
       if (user) {
-        token.id = ADMIN_SUPABASE_USER_ID
+        token.id = user.id || token.id
         token.email = user.email?.trim().toLowerCase() ?? token.email
-        token.name = user.name || ADMIN_NAME
+        token.name = user.name || token.name
         token.role = isAdminEmail(token.email as string | undefined) ? "admin" : "user"
       }
 
@@ -136,10 +146,10 @@ export const authConfig: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = (token.id as string) || ADMIN_SUPABASE_USER_ID
+        session.user.id = (token.id as string) || session.user.id
         session.user.email = (token.email as string) || session.user.email
-        session.user.name = (token.name as string) || session.user.name || ADMIN_NAME
-        session.user.role = (token.role as "admin" | "user") || session.user.role || "user"
+        session.user.name = (token.name as string) || session.user.name
+        session.user.role = (token.role as "admin" | "user") || "user"
       }
 
       return session
