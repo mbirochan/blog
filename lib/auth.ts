@@ -66,12 +66,26 @@ const resolvedSiteUrl =
   fallbackUrl ??
   "http://localhost:3000"
 
-if (!process.env.AUTH_TRUST_HOST) {
-  process.env.AUTH_TRUST_HOST = "true"
+const siteUrl = new URL(resolvedSiteUrl)
+const isSecureSite = siteUrl.protocol === "https:"
+const isPrivateSite = isPrivateIPv4(siteUrl.hostname)
+const sanitizedHost = siteUrl.hostname.replace(/[^a-zA-Z0-9]/g, '-') || 'localhost'
+const googlePrivateDeviceParams = isPrivateSite
+  ? {
+      device_id: `web-${sanitizedHost}`,
+      device_name: `BirochanBlog-${sanitizedHost}`,
+    }
+  : null
+
+
+if (isSecureSite) {
+  process.env.AUTH_TRUST_HOST ||= "true"
+} else if (process.env.AUTH_TRUST_HOST) {
+  process.env.AUTH_TRUST_HOST = ""
 }
 
 if (!process.env.NEXTAUTH_URL || isLoopbackHost(process.env.NEXTAUTH_URL)) {
-  process.env.NEXTAUTH_URL = resolvedSiteUrl
+  process.env.NEXTAUTH_URL = siteUrl.origin
 }
 
 if (!process.env.NEXTAUTH_URL_INTERNAL) {
@@ -107,6 +121,7 @@ const ADMIN_NAME = process.env.ADMIN_NAME || "Birochan Mainali"
 export const authConfig: NextAuthOptions = {
   debug: true,
   trustHost: true,
+  useSecureCookies: isSecureSite,
   secret: process.env.NEXTAUTH_SECRET,
   session: {
     strategy: "jwt",
@@ -115,6 +130,7 @@ export const authConfig: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      ...(googlePrivateDeviceParams ? { authorization: { params: googlePrivateDeviceParams } } : {}),
     }),
     CredentialsProvider({
       id: "otp",

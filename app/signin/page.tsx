@@ -22,6 +22,17 @@ function SignInContent() {
   const [otpSent, setOtpSent] = useState(false)
   const router = useRouter()
   const callbackUrl = useCallbackUrl()
+  const normalizedCallbackUrl = useMemo(() => {
+    if (typeof window === "undefined") {
+      return callbackUrl
+    }
+
+    try {
+      return new URL(callbackUrl, window.location.origin).toString()
+    } catch {
+      return window.location.origin
+    }
+  }, [callbackUrl])
   const { toast } = useToast()
 
   const handleSendOTP = async (event: React.FormEvent) => {
@@ -69,7 +80,7 @@ function SignInContent() {
         email: email.trim().toLowerCase(),
         otp: otp.trim(),
         redirect: false,
-        callbackUrl,
+        callbackUrl: normalizedCallbackUrl,
       })
 
       if (result?.error) {
@@ -90,21 +101,8 @@ function SignInContent() {
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true)
-    let didRedirect = false
     try {
-      const result = await signIn("google", { callbackUrl, redirect: false })
-      if (result?.error) {
-        throw new Error(result.error)
-      }
-
-      if (result?.url) {
-        didRedirect = true
-        window.location.href = result.url
-        return
-      }
-
-      didRedirect = true
-      router.push(callbackUrl)
+      await signIn("google", { callbackUrl: normalizedCallbackUrl })
     } catch (error) {
       toast({
         title: "Error",
@@ -112,9 +110,7 @@ function SignInContent() {
         variant: "destructive",
       })
     } finally {
-      if (!didRedirect) {
-        setIsLoading(false)
-      }
+      setIsLoading(false)
     }
   }
 
