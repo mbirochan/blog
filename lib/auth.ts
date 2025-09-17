@@ -181,7 +181,7 @@ export const authConfig: NextAuthOptions = {
     signOut: "/api/auth/signout",
     error: "/api/auth/error",
     verifyRequest: "/api/auth/verify-request",
-  },
+  }
 }
 
 export async function auth() {
