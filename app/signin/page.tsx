@@ -25,8 +25,8 @@ function SignInContent() {
   const callbackUrl = useCallbackUrl()
   const { toast } = useToast()
 
-  const handleSendOTP = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSendOTP = async (event: React.FormEvent) => {
+    event.preventDefault()
     const normalizedEmail = email.trim().toLowerCase()
 
     if (normalizedEmail !== ADMIN_EMAIL) {
@@ -68,8 +68,8 @@ function SignInContent() {
     }
   }
 
-  const handleVerifyOTP = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleVerifyOTP = async (event: React.FormEvent) => {
+    event.preventDefault()
     setIsLoading(true)
 
     try {
@@ -146,10 +146,10 @@ function SignInContent() {
               Google
             </Button>
             <div className="relative">
-              <div className="absolute inset-0 flex items.center">
+              <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t" />
               </div>
-              <div className="relative flex justify.center text-xs uppercase">
+              <div className="relative flex justify-center text-xs uppercase">
                 <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
               </div>
             </div>
@@ -162,7 +162,7 @@ function SignInContent() {
                     type="email"
                     placeholder="mbirochan@gmail.com"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(event) => setEmail(event.target.value)}
                     required
                   />
                 </div>
@@ -179,7 +179,7 @@ function SignInContent() {
                     type="text"
                     placeholder="Enter 6-digit code"
                     value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
+                    onChange={(event) => setOtp(event.target.value)}
                     maxLength={6}
                     required
                   />
@@ -208,12 +208,10 @@ function SignInContent() {
   )
 }
 
-function SignInForm() {
+export default function SignInForm() {
   return (
-    <Suspense fallback={<div className="py-10 text-center">Loading…</div>}>
+    <Suspense fallback={<div className="py-10 text-center">Loading...</div>}>
       <SignInContent />
     </Suspense>
   )
 }
-
-export default SignInForm
