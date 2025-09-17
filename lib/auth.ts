@@ -2,9 +2,77 @@ import NextAuth, { type NextAuthOptions, getServerSession } from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { randomUUID } from "crypto"
+import { networkInterfaces } from "os"
 
 import { ADMIN_SUPABASE_USER_ID, isAdminEmail, syncUserRole } from "./admin"
 import { supabaseAdmin } from "./supabase-admin"
+
+function normalizeUrl(candidate?: string | null) {
+  if (!candidate) {
+    return undefined
+  }
+
+  return candidate.startsWith("http://") || candidate.startsWith("https://")
+    ? candidate
+    : `https://${candidate}`
+}
+
+function isLoopbackHost(url: string) {
+  try {
+    const { hostname } = new URL(url)
+    return hostname === "localhost" || hostname === "127.0.0.1"
+  } catch {
+    return false
+  }
+}
+
+function isPrivateIPv4(address: string) {
+  return /^10\./.test(address) || /^192\.168\./.test(address) || /^172\.(1[6-9]|2\d|3[0-1])\./.test(address)
+}
+
+function discoverLocalNetworkUrl() {
+  try {
+    const interfaces = networkInterfaces()
+    for (const net of Object.values(interfaces)) {
+      if (!net) continue
+      for (const address of net) {
+        const family = typeof address.family === "string" ? address.family : `${address.family}`
+        if ((family === "IPv4" || family === "4") && !address.internal && isPrivateIPv4(address.address)) {
+          const port = process.env.PORT || "3000"
+          return `http://${address.address}:${port}`
+        }
+      }
+    }
+  } catch (error) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("Failed to detect local network interface for auth URLs:", error)
+    }
+  }
+
+  return undefined
+}
+
+const priorityUrls = [
+  normalizeUrl(process.env.NEXT_PUBLIC_SITE_URL),
+  normalizeUrl(process.env.NEXTAUTH_URL),
+  normalizeUrl(process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : ""),
+].filter(Boolean) as string[]
+
+const fallbackUrl = priorityUrls.length > 0 ? priorityUrls[0] : undefined
+
+const resolvedSiteUrl =
+  priorityUrls.find((url) => url && !isLoopbackHost(url)) ??
+  fallbackUrl ??
+  discoverLocalNetworkUrl() ??
+  "http://localhost:3000"
+
+if (!process.env.NEXTAUTH_URL || isLoopbackHost(process.env.NEXTAUTH_URL)) {
+  process.env.NEXTAUTH_URL = resolvedSiteUrl
+}
+
+if (!process.env.NEXTAUTH_URL_INTERNAL) {
+  process.env.NEXTAUTH_URL_INTERNAL = process.env.NEXTAUTH_URL
+}
 
 // Extend the built-in session and JWT types
 // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -34,6 +102,7 @@ const ADMIN_NAME = process.env.ADMIN_NAME || "Birochan Mainali"
 
 export const authConfig: NextAuthOptions = {
   debug: true,
+  trustHost: true,
   secret: process.env.NEXTAUTH_SECRET,
   session: {
     strategy: "jwt",

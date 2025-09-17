@@ -90,11 +90,20 @@ function SignInContent() {
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true)
+    let didRedirect = false
     try {
       const result = await signIn("google", { callbackUrl, redirect: false })
       if (result?.error) {
         throw new Error(result.error)
       }
+
+      if (result?.url) {
+        didRedirect = true
+        window.location.href = result.url
+        return
+      }
+
+      didRedirect = true
       router.push(callbackUrl)
     } catch (error) {
       toast({
@@ -103,7 +112,9 @@ function SignInContent() {
         variant: "destructive",
       })
     } finally {
-      setIsLoading(false)
+      if (!didRedirect) {
+        setIsLoading(false)
+      }
     }
   }
 

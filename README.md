@@ -26,6 +26,7 @@ Create a `.env` file at the project root with the following keys:
 
 ```bash
 NEXTAUTH_URL=http://localhost:3000
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
 NEXTAUTH_SECRET=your-random-secret
 
 GOOGLE_CLIENT_ID=
@@ -45,6 +46,7 @@ SUPABASE_STORAGE_BUCKET=blog-images
 ```
 
 > **Important**
+> * Set `NEXT_PUBLIC_SITE_URL` to the domain (or LAN IP) that every device will use to reach the app. This prevents OAuth callbacks from pointing back to `localhost`.
 > * `ADMIN_EMAILS` should contain a comma-separated list of admin emails.
 > * `ADMIN_SUPABASE_USER_ID` must match the Supabase `auth.users` UUID for the owner.
 > * `GMAIL_APP_PASSWORD` must be a valid Google App Password (2FA required).
