@@ -1,9 +1,12 @@
 import { redirect } from "next/navigation"
+import Link from "next/link"
+import { ArrowLeft } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { auth } from "@/lib/auth"
 import { PostsList } from "@/components/admin/posts-list"
 import { PostEditor } from "@/components/admin/post-editor"
 import { CommentsList } from "@/components/admin/comments-list"
+import { Button } from "@/components/ui/button"
 import { getAllPosts } from "@/app/actions/post-actions"
 import { isAdminEmail } from "@/lib/admin"
 import { supabase } from "@/lib/supabase"
@@ -48,7 +51,14 @@ export default async function AdminPage() {
 
   return (
     <div className="container mx-auto py-10">
-      <h1 className="mb-6 text-3xl font-bold">Admin Dashboard</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <Button variant="ghost" asChild>
+          <Link href="/">
+            <ArrowLeft className="mr-2 h-4 w-4" /> Back
+          </Link>
+        </Button>
+        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+      </div>
 
       <Tabs defaultValue="posts">
         <TabsList className="mb-6">
