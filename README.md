@@ -1,71 +1,77 @@
 # Birochan Blog
 
-This project is a Next.js blog platform that uses **NextAuth.js** for authentication and **Supabase** for data storage. Users can sign in with Google or via email and leave comments on posts. Email sign‑in is powered by SendGrid.
+Birochan Blog is a content-focused site built with **Next.js 15**. It pairs a custom admin experience with Supabase storage, NextAuth authentication, and a modern UI powered by Tailwind CSS and shadcn/ui.
+
+## Features
+
+- Google one-click sign-in restricted to the owner (`mbirochan@gmail.com`).
+- Email-based OTP login delivered via Gmail�s SMTP service.
+- Full Supabase integration for posts, comments, and user profiles.
+- Rich-text friendly post editor that preserves paragraphs and inline formatting.
+- Admin-only dashboard to create, publish, and moderate posts or replies.
+- Upvotes and threaded comments on public posts.
 
 ## Getting Started
 
-1. **Install dependencies**
+### 1. Install Dependencies
 
-   ```bash
-   npm install
-   ```
+```bash
+pnpm install
+# or npm install / yarn install
+```
 
-2. **Create an `.env` file** in the project root with the following variables:
+### 2. Configure Environment Variables
 
-   ```
+Create a `.env` file at the project root with the following keys:
 
-   ```
-
-# NextAuth.js Configuration
+```bash
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=your-random-secret
 
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
-NEXTAUTH_URL=
-NEXTAUTH_SECRET=
 
-# Email Provider (SMTP)
-
-EMAIL_SERVER=
+GMAIL_USER=
+GMAIL_APP_PASSWORD=
+EMAIL_SERVER=smtp://GMAIL_USER:GMAIL_APP_PASSWORD@smtp.gmail.com:587
 EMAIL_FROM=
-
-# Supabase Configuration
 
 NEXT_PUBLIC_SUPABASE_URL=
 SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
-
-````
-
-Ensure all values are provided or authentication will fail. The `SENDGRID_FROM_EMAIL` must be a verified sender in your SendGrid account.
-
-3. **Run the development server**
-
-```bash
-npm run dev
-````
-
-Visit `http://localhost:3000` in your browser.
-
-## Authentication
-
-- **Google** – OAuth 2.0 credentials from the Google Developer Console are required. Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in your `.env` file.
-- **NextAuth** – Configure `NEXTAUTH_URL` to the base URL of your site and set `NEXTAUTH_SECRET` to a random string. Add `<NEXTAUTH_URL>/api/auth/callback/google` as an authorized redirect URI in the Google Developer Console.
-- **Email** – Uses SendGrid's SMTP service. Provide the `SENDGRID_API_KEY`, `SENDGRID_FROM_EMAIL`, and `SENDGRID_FROM_NAME` variables.
-- **Supabase** – Acts as the database and NextAuth adapter. Supply `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` from your Supabase project.
-
-With valid credentials, users can sign in without errors and post comments on blog articles.
-
-## Building for Production
-
-Run the following commands to lint and build the application:
-
-```bash
-npm run lint
-npm run build
+ADMIN_EMAILS=mbirochan@gmail.com
+ADMIN_SUPABASE_USER_ID=
+SUPABASE_STORAGE_BUCKET=blog-images
 ```
 
-The production build output will be generated in the `.next` directory.
+> **Important**
+> * `ADMIN_EMAILS` should contain a comma-separated list of admin emails.
+> * `ADMIN_SUPABASE_USER_ID` must match the Supabase `auth.users` UUID for the owner.
+> * `GMAIL_APP_PASSWORD` must be a valid Google App Password (2FA required).
+
+### 3. Run the Development Server
+
+```bash
+pnpm run dev
+```
+
+Visit `http://localhost:3000` to view the blog. The admin dashboard lives at `/admin` and requires one of the configured admin accounts to sign in.
+
+## Production Build
+
+Lint and compile before deploying:
+
+```bash
+pnpm run lint
+pnpm run build
+```
+
+Deploying on Vercel or a custom host requires the `.env` values to be set in the hosting platform as well.
+
+## About the Author
+
+**Birochan Mainali** is a software engineer passionate about design-focused products and friendly user experiences. You can reach out at `mbirochan@gmail.com`.
 
 ## License
 
-This project is provided for educational purposes. Feel free to modify and use it as a starting point for your own blog.
+This repository is made available for personal and educational projects. Fork it, tweak it, and make it your own.
