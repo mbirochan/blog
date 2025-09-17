@@ -364,3 +364,29 @@ export async function getCategories() {
     return []
   }
 }
+
+export async function getPostById(id: string) {
+  if (!supabase) {
+    return null
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("posts")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle()
+
+    if (error) {
+      if ("code" in error && error.code === "PGRST116") {
+        return null
+      }
+      throw error
+    }
+
+    return data ?? null
+  } catch (error) {
+    console.error("Error fetching post by id:", error)
+    return null
+  }
+}

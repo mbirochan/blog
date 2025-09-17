@@ -64,7 +64,7 @@ export function BlogSidebar() {
             <AvatarFallback>JD</AvatarFallback>
           </Avatar>
           <div className="grid gap-0.5 text-sm">
-            <h3 className="font-medium">My Blog</h3>
+            <h3 className="font-medium">Birochan Mainali</h3>
             <p className="text-xs text-muted-foreground">Personal thoughts & ideas</p>
           </div>
         </div>
@@ -197,3 +197,4 @@ export function BlogSidebar() {
     </Sidebar>
   )
 }
+
