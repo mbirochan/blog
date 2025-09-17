@@ -7,6 +7,10 @@
 /.next/
 /out/
 
+# database_sechema
+supabase_database_schema.sql
+
+
 # production
 /build
 

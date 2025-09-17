@@ -38,6 +38,7 @@ export function BlogSidebar() {
       const { data, error } = await supabase
         .from("posts")
         .select("category")
+        .eq("published", true)
         .neq("category", null)
 
       if (!error && data) {
@@ -68,7 +69,7 @@ export function BlogSidebar() {
             <p className="text-xs text-muted-foreground">Personal thoughts & ideas</p>
           </div>
         </div>
-        <div className="px-2 pb-2">
+        <div className="px-2 pb-2 hidden md:block">
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
@@ -117,9 +118,11 @@ export function BlogSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton>
-                  <Sparkles className="h-4 w-4" />
-                  <span>Featured</span>
+                <SidebarMenuButton asChild isActive={pathname?.startsWith("/featured")}>
+                  <Link href="/featured">
+                    <Sparkles className="h-4 w-4" />
+                    <span>Featured</span>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
@@ -197,4 +200,6 @@ export function BlogSidebar() {
     </Sidebar>
   )
 }
+
+
 

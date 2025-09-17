@@ -21,6 +21,7 @@ interface PostEditorProps {
     category: string
     image_url: string
     published: boolean
+    featured: boolean
   }
 }
 
@@ -54,6 +55,10 @@ export function PostEditor({ post }: PostEditorProps) {
 
     if (post?.id) {
       formData.set("id", post.id)
+    }
+
+    if (!formData.has("featured")) {
+      formData.set("featured", "false")
     }
 
     try {
@@ -222,6 +227,24 @@ export function PostEditor({ post }: PostEditorProps) {
             </div>
           </div>
         )}
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <input
+            id="featured"
+            name="featured"
+            type="checkbox"
+            value="true"
+            defaultChecked={post?.featured ?? false}
+            className="h-4 w-4"
+            disabled={isLoading || isUploading}
+          />
+          <Label htmlFor="featured">Mark as featured</Label>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Featured posts appear on the homepage highlight and the featured page.
+        </p>
       </div>
 
       <div className="flex gap-2">

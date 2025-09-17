@@ -195,7 +195,7 @@ const Sidebar = React.forwardRef<
     if (isMobile) {
       return (
         <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
-          <SheetContent
+          <SheetContent onOpenAutoFocus={(event) => event.preventDefault()}
             onOpenAutoFocus={(event) => event.preventDefault()}
             data-sidebar="sidebar"
             data-mobile="true"
@@ -762,4 +762,5 @@ export {
   SidebarTrigger,
   useSidebar,
 }
+
 

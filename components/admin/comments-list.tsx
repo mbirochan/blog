@@ -1,26 +1,36 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
-import { supabase } from "@/lib/supabase"
-import { addComment, deleteComment } from "@/app/actions/comment-actions"
+import { addComment, deleteComment, getAllComments } from "@/app/actions/comment-actions"
+
+interface CommentAuthor {
+  name: string | null
+  email: string | null
+}
+
+interface CommentPost {
+  id: string | null
+  title: string | null
+  slug: string | null
+}
 
 interface Comment {
   id: string
   content: string
   created_at: string
-  user: {
-    name: string
-    email: string
-  }
-  post: {
-    id: string
-    title: string
-    slug: string
-  }
+  user?: CommentAuthor | null
+  post?: CommentPost | null
 }
 
 export function CommentsList() {
@@ -32,25 +42,23 @@ export function CommentsList() {
   const [isReplySubmitting, setIsReplySubmitting] = useState(false)
   const { toast } = useToast()
 
-  const fetchComments = useCallback(
-    async (showInitialLoader = false) => {
-      if (showInitialLoader) {
+  const loadComments = useCallback(
+    async (showLoader = false) => {
+      if (showLoader) {
         setIsLoading(true)
       }
 
       try {
-        const { data, error } = await supabase
-          .from("comments")
-          .select(`
-            *,
-            user:profiles(name, email),
-            post:posts(id, title, slug)
-          `)
-          .order("created_at", { ascending: false })
+        const result = await getAllComments()
+        const normalized: Comment[] = Array.isArray(result)
+          ? (result as Comment[]).map((comment) => ({
+              ...comment,
+              user: comment.user ?? null,
+              post: comment.post ?? null,
+            }))
+          : []
 
-        if (error) throw error
-
-        setComments(data || [])
+        setComments(normalized)
       } catch (error) {
         console.error("Error fetching comments:", error)
         toast({
@@ -59,7 +67,7 @@ export function CommentsList() {
           variant: "destructive",
         })
       } finally {
-        if (showInitialLoader) {
+        if (showLoader) {
           setIsLoading(false)
         }
       }
@@ -68,8 +76,8 @@ export function CommentsList() {
   )
 
   useEffect(() => {
-    fetchComments(true)
-  }, [fetchComments])
+    loadComments(true)
+  }, [loadComments])
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this comment?")) {
@@ -85,7 +93,7 @@ export function CommentsList() {
         throw new Error(result.error)
       }
 
-      await fetchComments()
+      await loadComments()
 
       toast({
         title: "Comment deleted",
@@ -102,9 +110,19 @@ export function CommentsList() {
     }
   }
 
-
   const handleReplySubmit = async (comment: Comment) => {
     if (!replyContent.trim()) {
+      return
+    }
+
+    if (!comment.post?.id) {
+      toast({
+        title: "Cannot reply",
+        description: "The original post for this comment is no longer available.",
+        variant: "destructive",
+      })
+      setReplyingId(null)
+      setReplyContent("")
       return
     }
 
@@ -130,7 +148,7 @@ export function CommentsList() {
       setReplyContent("")
       setReplyingId(null)
 
-      await fetchComments()
+      await loadComments()
     } catch (error) {
       console.error("Error replying to comment:", error)
       toast({
@@ -144,94 +162,121 @@ export function CommentsList() {
   }
 
   if (isLoading) {
-    return <div className="text-center py-8">Loading comments...</div>
+    return <div className="py-8 text-center">Loading comments...</div>
   }
 
   if (comments.length === 0) {
-    return <div className="text-center py-8 text-muted-foreground">No comments found.</div>
+    return <div className="py-8 text-center text-muted-foreground">No comments found.</div>
   }
 
   return (
     <div className="space-y-4">
-      {comments.map((comment) => (
-        <Card key={comment.id}>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base">{comment.user.name}</CardTitle>
-              <span className="text-sm text-muted-foreground">{new Date(comment.created_at).toLocaleDateString()}</span>
-            </div>
-            <CardDescription>
-              On:{" "}
-              <a href={`/blog/${comment.post.slug}`} className="hover:underline">
-                {comment.post.title}
-              </a>
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p>{comment.content}</p>
-          </CardContent>
-          <CardFooter className="flex flex-col gap-3 pt-0">
-            <div className="flex flex-wrap gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  if (replyingId === comment.id) {
-                    setReplyingId(null)
-                    setReplyContent("")
-                  } else {
-                    setReplyingId(comment.id)
-                    setReplyContent("")
-                  }
-                }}
-                disabled={deletingId === comment.id || (isReplySubmitting && replyingId === comment.id)}
-              >
-                {replyingId === comment.id ? "Close reply" : "Reply"}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="text-red-500 hover:text-red-700"
-                onClick={() => handleDelete(comment.id)}
-                disabled={deletingId === comment.id || (isReplySubmitting && replyingId === comment.id)}
-              >
-                {deletingId === comment.id ? "Deleting..." : "Delete"}
-              </Button>
-            </div>
-            {replyingId === comment.id && (
-              <div className="w-full space-y-2">
-                <Textarea
-                  value={replyContent}
-                  onChange={(event) => setReplyContent(event.target.value)}
-                  placeholder="Write your reply"
-                  className="min-h-[120px]"
-                />
-                <div className="flex justify-end gap-2">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
+      {comments.map((comment) => {
+        const authorName = comment.user?.name?.trim() || "Unknown user"
+        const createdAtDate = comment.created_at ? new Date(comment.created_at) : null
+        const formattedDate =
+          createdAtDate && !Number.isNaN(createdAtDate.getTime())
+            ? createdAtDate.toLocaleDateString()
+            : "—"
+        const postId = comment.post?.id ?? null
+        const postSlug = comment.post?.slug ?? null
+        const hasPostLink = Boolean(postSlug)
+        const postTitle =
+          hasPostLink && comment.post?.title?.trim()
+            ? comment.post.title.trim()
+            : hasPostLink
+              ? "Untitled post"
+              : null
+        const canReply = Boolean(postId)
+        const isReplyOpen = replyingId === comment.id
+
+        return (
+          <Card key={comment.id}>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base">{authorName}</CardTitle>
+                <span className="text-sm text-muted-foreground">{formattedDate}</span>
+              </div>
+              <CardDescription>
+                {hasPostLink ? (
+                  <>
+                    On{" "}
+                    <a href={`/blog/${postSlug}`} className="hover:underline">
+                      {postTitle}
+                    </a>
+                  </>
+                ) : (
+                  <span className="italic text-muted-foreground">Original post unavailable</span>
+                )}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p>{comment.content}</p>
+            </CardContent>
+            <CardFooter className="flex flex-col gap-3 pt-0">
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    if (isReplyOpen) {
                       setReplyingId(null)
                       setReplyContent("")
-                    }}
-                    disabled={isReplySubmitting}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={() => handleReplySubmit(comment)}
-                    disabled={isReplySubmitting || !replyContent.trim()}
-                  >
-                    {isReplySubmitting ? "Sending..." : "Post Reply"}
-                  </Button>
-                </div>
+                    } else if (canReply) {
+                      setReplyingId(comment.id)
+                      setReplyContent("")
+                    }
+                  }}
+                  disabled={deletingId === comment.id || isReplySubmitting || !canReply}
+                  title={!canReply ? "Replies are disabled because the original post was removed." : undefined}
+                >
+                  {isReplyOpen ? "Close reply" : "Reply"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-red-500 hover:text-red-700"
+                  onClick={() => handleDelete(comment.id)}
+                  disabled={deletingId === comment.id}
+                >
+                  {deletingId === comment.id ? "Deleting..." : "Delete"}
+                </Button>
               </div>
-            )}
-          </CardFooter>
-        </Card>
-      ))}
+              {isReplyOpen && canReply && (
+                <div className="w-full space-y-2">
+                  <Textarea
+                    value={replyContent}
+                    onChange={(event) => setReplyContent(event.target.value)}
+                    placeholder="Write your reply"
+                    className="min-h-[120px]"
+                  />
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setReplyingId(null)
+                        setReplyContent("")
+                      }}
+                      disabled={isReplySubmitting}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => handleReplySubmit(comment)}
+                      disabled={isReplySubmitting || !replyContent.trim()}
+                    >
+                      {isReplySubmitting ? "Sending..." : "Post Reply"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardFooter>
+          </Card>
+        )
+      })}
     </div>
   )
 }

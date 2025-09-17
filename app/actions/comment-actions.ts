@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { supabase } from "@/lib/supabase"
+import { supabaseAdmin } from "@/lib/supabase-admin"
 import { isAdminEmail } from "@/lib/admin"
 import { auth } from "@/lib/auth"
 
@@ -21,7 +22,6 @@ export async function addComment(formData: FormData) {
   }
 
   if (!supabase) {
-    // In development mode, just return success
     revalidatePath(`/blog/${postId}`)
     return { success: true }
   }
@@ -40,7 +40,6 @@ export async function addComment(formData: FormData) {
 
     if (error) throw error
 
-    // Revalidate the post page to show the new comment
     revalidatePath(`/blog/${postId}`)
 
     return { success: true, comment: data }
@@ -62,29 +61,32 @@ export async function deleteComment(commentId: string) {
   }
 
   try {
-    // First check if the user is the comment author or an admin
-    const { data: comment } = await supabase.from("comments").select("*").eq("id", commentId).single()
+    const { data: comment } = await supabase
+      .from("comments")
+      .select("*")
+      .eq("id", commentId)
+      .single()
 
     if (!comment) {
       return { error: "Comment not found" }
     }
 
-    // Check if user is admin
-    const { data: profile } = await supabase.from("profiles").select("role").eq("id", session.user.id).single()
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", session.user.id)
+      .single()
 
     const isAdmin = isAdminEmail(session.user.email) || profile?.role === "admin"
 
-    // Only allow deletion if user is the author or an admin
     if (comment.user_id !== session.user.id && !isAdmin) {
       return { error: "You do not have permission to delete this comment" }
     }
 
-    // Delete the comment
     const { error } = await supabase.from("comments").delete().eq("id", commentId)
 
     if (error) throw error
 
-    // Revalidate the post page
     revalidatePath(`/blog/${comment.post_id}`)
 
     return { success: true }
@@ -116,5 +118,31 @@ export async function getComments(postId: string) {
   } catch (error) {
     console.error("Error fetching comments:", error)
     return { comments: [] }
+  }
+}
+
+export async function getAllComments() {
+  const client = supabaseAdmin ?? supabase
+
+  if (!client) {
+    return []
+  }
+
+  try {
+    const { data, error } = await client
+      .from("comments")
+      .select(`
+        *,
+        user:profiles(name, email),
+        post:posts(id, title, slug)
+      `)
+      .order("created_at", { ascending: false })
+
+    if (error) throw error
+
+    return data || []
+  } catch (error) {
+    console.error("Error fetching admin comments:", error)
+    return []
   }
 }

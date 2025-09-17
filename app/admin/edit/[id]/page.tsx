@@ -75,6 +75,7 @@ export default async function EditPostPage({ params }: { params: { id: string } 
           category: post.category ?? "",
           image_url: post.image_url ?? "",
           published: post.published ?? false,
+          featured: post.featured ?? false,
         }}
       />
     </div>

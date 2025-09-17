@@ -1,4 +1,3 @@
-
 import { createClient } from "@supabase/supabase-js"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
@@ -16,13 +15,17 @@ export type Post = {
   title: string
   content: string
   excerpt: string
-  author: string
+  author?: string | null
+  author_id?: string | null
+  category?: string | null
+  image_url?: string | null
   created_at: string
-  updated_at: string
+  updated_at?: string | null
   slug: string
   published: boolean
-  tags: string[]
-  upvotes: number
+  featured?: boolean | null
+  tags?: string[] | null
+  upvotes?: number | null
 }
 
 export type Comment = {
@@ -38,6 +41,6 @@ export type Profile = {
   email: string
   full_name: string
   avatar_url?: string
-  role: 'user' | 'admin'
+  role: "user" | "admin"
   created_at: string
 }

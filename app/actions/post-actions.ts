@@ -84,6 +84,11 @@ export async function savePost(formData: FormData) {
   const imageUrl = ((formData.get("imageUrl") as string) || "").trim()
   const content = (formData.get("content") as string) || ""
   const published = formData.get("published") === "true"
+  const featuredValue = formData.get("featured")
+  const featured =
+    featuredValue === "true" ||
+    featuredValue === "on" ||
+    featuredValue === "1"
 
   const slug = normalizeSlug(rawSlug, title)
   const normalizedContent = formatContent(content)
@@ -132,6 +137,7 @@ export async function savePost(formData: FormData) {
       category: category || null,
       image_url: imageUrl || null,
       published,
+      featured,
     }
 
     const result = id
@@ -156,6 +162,7 @@ export async function savePost(formData: FormData) {
 
     revalidatePath("/admin")
     revalidatePath("/")
+    revalidatePath("/featured")
     if (previousSlug && previousSlug !== slug) {
       revalidatePath(`/blog/${previousSlug}`)
     }
@@ -200,6 +207,7 @@ export async function deletePost(id: string) {
 
     revalidatePath("/admin")
     revalidatePath("/")
+    revalidatePath("/featured")
     revalidatePath(`/blog/${post.slug}`)
 
     return { success: true }
@@ -247,12 +255,64 @@ export async function togglePublishStatus(id: string) {
 
     revalidatePath("/admin")
     revalidatePath("/")
+    revalidatePath("/featured")
     revalidatePath(`/blog/${post.slug}`)
 
     return { success: true, published: !post.published }
   } catch (error) {
     console.error("Error toggling publish status:", error)
     return { error: "Failed to update publish status" }
+  }
+}
+
+export async function toggleFeaturedStatus(id: string) {
+  const session = await auth()
+
+  if (!session?.user) {
+    return { error: "You must be logged in" }
+  }
+
+  if (!(await ensureAdminAccess(session.user))) {
+    return { error: "You do not have permission to manage featured posts" }
+  }
+
+  if (!supabase) {
+    return { error: "Supabase client not configured" }
+  }
+
+  try {
+    const { data: post } = await supabase
+      .from("posts")
+      .select("id, slug, featured")
+      .eq("id", id)
+      .maybeSingle()
+
+    if (!post) {
+      return { error: "Post not found" }
+    }
+
+    const currentFeatured = Boolean(post.featured)
+    const nextFeatured = !currentFeatured
+
+    const { error } = await supabase
+      .from("posts")
+      .update({
+        featured: nextFeatured,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+
+    if (error) throw error
+
+    revalidatePath("/admin")
+    revalidatePath("/")
+    revalidatePath("/featured")
+    revalidatePath(`/blog/${post.slug}`)
+
+    return { success: true, featured: nextFeatured }
+  } catch (error) {
+    console.error("Error toggling featured status:", error)
+    return { error: "Failed to update featured status" }
   }
 }
 
@@ -390,3 +450,4 @@ export async function getPostById(id: string) {
     return null
   }
 }
+
