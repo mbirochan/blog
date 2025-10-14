@@ -10,7 +10,8 @@ const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "Birochan Mainali's Blog",
-  description: "My vibe coded personal blog site. Here I post my thoughts, ideas and trends "
+  description: "My personal blog site. Here I post my thoughts, ideas and trends "
+}
 
 export default function RootLayout({
   children,
