@@ -9,9 +9,8 @@ import { Toaster } from "@/components/ui/toaster"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Modern Blog",
-  description: "A modern blog built with Next.js and shadcn/ui",
-}
+  title: "Birochan Mainali's Blog",
+  description: "My vibe coded personal blog site. Here I post my thoughts, ideas and trends "
 
 export default function RootLayout({
   children,
