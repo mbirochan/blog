@@ -4,21 +4,9 @@ import type React from "react"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { signIn } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast"
 import { formatDistanceToNow } from "@/lib/utils"
 import { addComment, deleteComment } from "@/app/actions/comment-actions"
@@ -182,29 +170,9 @@ export function CommentSection({ postId, comments: initialComments, isLoggedIn, 
       ) : (
         <div className="rounded-lg border p-4 text-center">
           <p className="mb-4">Sign in with Google or Email to leave a comment</p>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button>Sign In</Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Sign in to comment</AlertDialogTitle>
-                <AlertDialogDescription>
-                  You need to sign in to comment on blog posts. Choose your sign-in method:
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter className="flex-col space-y-2 sm:space-y-0">
-                <AlertDialogAction
-                  onClick={() =>
-                    signIn(undefined, { callbackUrl: window.location.href })
-                  }
-                >
-                  Sign in with Google or Email
-                </AlertDialogAction>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          <Button onClick={() => router.push(`/signin?callbackUrl=${encodeURIComponent(window.location.pathname)}`)}>
+            Sign In
+          </Button>
         </div>
       )}
 
@@ -221,7 +189,7 @@ export function CommentSection({ postId, comments: initialComments, isLoggedIn, 
               replyContent={replyContent}
               setReplyContent={setReplyContent}
               onSubmitReply={() => handleSubmitReply(comment.id)}
-              onDeleteComment={() => handleDeleteComment(comment.id)}
+              onDeleteComment={handleDeleteComment}
               isSubmitting={isSubmitting}
             />
           ))}
@@ -253,7 +221,7 @@ function CommentItem({
   replyContent: string
   setReplyContent: (content: string) => void
   onSubmitReply: () => void
-  onDeleteComment: () => void
+  onDeleteComment: (commentId: string) => void
   isSubmitting: boolean
 }) {
   const router = useRouter()
@@ -274,31 +242,14 @@ function CommentItem({
                 Reply
               </Button>
             ) : (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-auto p-0 text-xs text-muted-foreground">
-                    Reply
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Sign in to reply</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      You need to sign in to reply to comments. Choose your sign-in method:
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter className="flex-col space-y-2 sm:space-y-0">
-                    <AlertDialogAction
-                      onClick={() =>
-                        signIn(undefined, { callbackUrl: window.location.href })
-                      }
-                    >
-                      Sign in with Google or Email
-                    </AlertDialogAction>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-auto p-0 text-xs text-muted-foreground"
+                onClick={() => router.push(`/signin?callbackUrl=${encodeURIComponent(window.location.pathname)}`)}
+              >
+                Reply
+              </Button>
             )}
 
             {isAuthor && (
@@ -306,7 +257,7 @@ function CommentItem({
                 variant="ghost"
                 size="sm"
                 className="h-auto p-0 text-xs text-red-500 hover:text-red-700"
-                onClick={onDeleteComment}
+                onClick={() => onDeleteComment(comment.id)}
               >
                 Delete
               </Button>
@@ -348,7 +299,7 @@ function CommentItem({
                   variant="ghost"
                   size="sm"
                   className="h-auto p-0 text-xs text-red-500 hover:text-red-700"
-                  onClick={onDeleteComment}
+                  onClick={() => onDeleteComment(reply.id)}
                 >
                   Delete
                 </Button>

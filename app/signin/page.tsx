@@ -1,13 +1,13 @@
 "use client"
 
-import { Suspense, useMemo, useState } from "react"
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { signIn } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 
 
 function useCallbackUrl() {
@@ -20,6 +20,7 @@ function SignInContent() {
   const [email, setEmail] = useState("")
   const [otp, setOtp] = useState("")
   const [otpSent, setOtpSent] = useState(false)
+  const [cooldown, setCooldown] = useState(0)
   const router = useRouter()
   const callbackUrl = useCallbackUrl()
   const normalizedCallbackUrl = useMemo(() => {
@@ -35,11 +36,17 @@ function SignInContent() {
   }, [callbackUrl])
   const { toast } = useToast()
 
+  useEffect(() => {
+    if (cooldown <= 0) return
+    const timer = setTimeout(() => setCooldown((c) => c - 1), 1000)
+    return () => clearTimeout(timer)
+  }, [cooldown])
+
+  const startCooldown = useCallback(() => setCooldown(60), [])
+
   const handleSendOTP = async (event: React.FormEvent) => {
     event.preventDefault()
     const normalizedEmail = email.trim().toLowerCase()
-
-    // Allow OTP for any email
 
     setIsLoading(true)
 
@@ -50,12 +57,15 @@ function SignInContent() {
         body: JSON.stringify({ email: normalizedEmail }),
       })
 
+      const data = await response.json()
+
       if (!response.ok) {
-        throw new Error("Failed to send OTP")
+        throw new Error(data?.error || "Failed to send OTP")
       }
 
       setEmail(normalizedEmail)
       setOtpSent(true)
+      startCooldown()
       toast({
         title: "OTP Sent",
         description: "Please check your inbox (and spam folder) for the code.",
@@ -63,7 +73,7 @@ function SignInContent() {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to send OTP. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to send OTP. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -89,9 +99,11 @@ function SignInContent() {
 
       router.push(callbackUrl)
     } catch (error) {
+      const message = error instanceof Error ? error.message : "Invalid OTP. Please try again."
+      const isExpired = message.toLowerCase().includes("expired")
       toast({
-        title: "Error",
-        description: "Invalid OTP. Please try again.",
+        title: isExpired ? "Code Expired" : "Error",
+        description: isExpired ? "Your code has expired. Please request a new one." : message,
         variant: "destructive",
       })
     } finally {
@@ -188,11 +200,21 @@ function SignInContent() {
                 </Button>
                 <Button
                   type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleSendOTP}
+                  disabled={isLoading || cooldown > 0}
+                >
+                  {cooldown > 0 ? `Resend code (${cooldown}s)` : "Resend code"}
+                </Button>
+                <Button
+                  type="button"
                   variant="ghost"
                   className="w-full"
                   onClick={() => {
                     setOtpSent(false)
                     setOtp("")
+                    setCooldown(0)
                   }}
                   disabled={isLoading}
                 >

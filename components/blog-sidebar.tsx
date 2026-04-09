@@ -58,8 +58,8 @@ export function BlogSidebar() {
       <SidebarHeader>
         <div className="flex items-center gap-2 px-2 py-3">
           <Avatar className="h-8 w-8">
-            <AvatarImage src="/placeholder.svg?height=32&width=32" alt="Avatar" />
-            <AvatarFallback>JD</AvatarFallback>
+            <AvatarImage src="/placeholder.svg?height=32&width=32" alt="Birochan Mainali" />
+            <AvatarFallback>BM</AvatarFallback>
           </Avatar>
           <div className="grid gap-0.5 text-sm">
             <h3 className="font-medium">Birochan Mainali</h3>

@@ -39,11 +39,3 @@ export type Comment = {
   created_at: string
 }
 
-export type Profile = {
-  id: string
-  email: string
-  full_name: string
-  avatar_url?: string
-  role: "user" | "admin"
-  created_at: string
-}

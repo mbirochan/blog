@@ -1,8 +1,25 @@
 import nodemailer from "nodemailer"
-import { supabase } from "@/lib/supabase"
+import { supabaseAdmin } from "@/lib/supabase-admin"
 
 const gmailUser = process.env.GMAIL_USER
 const gmailPassword = process.env.GMAIL_APP_PASSWORD
+
+// In-memory rate limiter: max 3 OTP requests per email per 5 minutes
+const RATE_LIMIT_WINDOW = 5 * 60_000
+const RATE_LIMIT_MAX = 3
+const otpAttempts = new Map<string, number[]>()
+
+function isRateLimited(email: string): boolean {
+  const now = Date.now()
+  const timestamps = (otpAttempts.get(email) || []).filter((t) => now - t < RATE_LIMIT_WINDOW)
+  if (timestamps.length >= RATE_LIMIT_MAX) {
+    otpAttempts.set(email, timestamps)
+    return true
+  }
+  timestamps.push(now)
+  otpAttempts.set(email, timestamps)
+  return false
+}
 
 export async function POST(req: Request) {
   try {
@@ -14,22 +31,26 @@ export async function POST(req: Request) {
       return new Response(JSON.stringify({ error: "Email is required" }), { status: 400 })
     }
 
-    // Allow OTP for any valid email
+    if (isRateLimited(email)) {
+      return new Response(
+        JSON.stringify({ error: "Too many requests. Please wait a few minutes before trying again." }),
+        { status: 429 },
+      )
+    }
 
     if (!gmailUser || !gmailPassword) {
       console.error("Missing Gmail SMTP credentials")
       return new Response(JSON.stringify({ error: "Email service configuration error" }), { status: 500 })
     }
 
-    if (!supabase) {
-      console.error("Supabase client is not configured")
+    if (!supabaseAdmin) {
+      console.error("Supabase admin client is not configured")
       return new Response(JSON.stringify({ error: "Database not available" }), { status: 500 })
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString()
-    console.log(`Generated OTP for ${email}: ${otp}`)
 
-    const { error: dbError } = await supabase
+    const { error: dbError } = await supabaseAdmin
       .from("auth_email_otps")
       .upsert({
         email,

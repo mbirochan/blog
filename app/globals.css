@@ -3,6 +3,10 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
   :root {
     --background: 0 0% 100%;
     --foreground: 20 14.3% 4.1%;
@@ -75,5 +79,54 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-size: 18px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Paper-feel prose link styling: thin underline, no color change */
+.prose a {
+  text-decoration: none;
+  box-shadow: 0 1px 0 0 currentColor;
+  transition: box-shadow 0.2s ease;
+}
+.prose a:hover {
+  box-shadow: 0 2px 0 0 currentColor;
+}
+
+/* Off-white background for list pages so white cards pop subtly */
+.paper-list-bg {
+  background-color: hsl(var(--secondary));
+}
+.dark .paper-list-bg {
+  background-color: hsl(var(--background));
+}
+
+/* Fade-in-up animation for staggered card entrances */
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease-out both;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .animate-fade-in-up {
+    animation: none;
+    opacity: 1;
   }
 }

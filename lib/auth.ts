@@ -1,4 +1,5 @@
-import NextAuth, { type NextAuthOptions, getServerSession } from "next-auth"
+import NextAuth, { getServerSession } from "next-auth"
+import type { AuthOptions } from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { randomUUID } from "crypto"
@@ -36,7 +37,7 @@ function discoverLocalNetworkUrl() {
     for (const net of Object.values(interfaces)) {
       if (!net) continue
       for (const address of net) {
-        const family = typeof address.family === "string" ? address.family : `${address.family}`
+        const family = String((address as { family: string | number }).family)
         if ((family === "IPv4" || family === "4") && !address.internal && isPrivateIPv4(address.address)) {
           const port = process.env.PORT || "3000"
           return `http://${address.address}:${port}`
@@ -118,9 +119,8 @@ declare module "next-auth/jwt" {
 
 const ADMIN_NAME = process.env.ADMIN_NAME || "Birochan Mainali"
 
-export const authConfig: NextAuthOptions = {
+export const authConfig: AuthOptions = {
   debug: true,
-  trustHost: true,
   useSecureCookies: isSecureSite,
   secret: process.env.NEXTAUTH_SECRET,
   session: {
@@ -162,8 +162,11 @@ export const authConfig: NextAuthOptions = {
         }
 
         const isExpired = new Date(data.expires_at).getTime() < Date.now()
-        if (data.code !== otp || isExpired) {
-          throw new Error("Invalid OTP")
+        if (isExpired) {
+          throw new Error("OTP has expired. Please request a new code.")
+        }
+        if (data.code !== otp) {
+          throw new Error("Incorrect code. Please try again.")
         }
 
         await supabaseAdmin.from("auth_email_otps").delete().eq("email", email)
@@ -189,13 +192,13 @@ export const authConfig: NextAuthOptions = {
     }),
   ],
   logger: {
-    error(code, metadata) {
+    error(code: string, metadata: unknown) {
       console.error("NextAuth logger error", code, metadata)
     },
-    warn(code) {
+    warn(code: string) {
       console.warn("NextAuth logger warn", code)
     },
-    debug(code, metadata) {
+    debug(code: string, metadata: unknown) {
       console.debug("NextAuth logger debug", code, metadata)
     },
   },

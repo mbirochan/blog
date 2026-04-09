@@ -27,9 +27,9 @@ export default async function Home({ searchParams }: HomeProps) {
 
   return (
     <BlogLayout>
-      <div className="space-y-10">
+      <div className="space-y-10 paper-list-bg -mx-6 -my-8 px-6 py-8 min-h-full">
         {category && (
-          <div className="text-center">
+          <div className="text-center animate-fade-in-up">
             <h1 className="mb-2 text-4xl font-bold tracking-tight">
               {category.charAt(0).toUpperCase() + category.slice(1)} Posts
             </h1>
@@ -38,11 +38,11 @@ export default async function Home({ searchParams }: HomeProps) {
         )}
 
         <section>
-          <h2 className="mb-6 text-3xl font-bold tracking-tight">{featuredHeading}</h2>
+          <h2 className="mb-6 text-3xl font-bold tracking-tight animate-fade-in-up">{featuredHeading}</h2>
           {featuredPosts.length > 0 ? (
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              {featuredPosts.map((post) => (
-                <BlogCard key={post.id} post={post} featured />
+              {featuredPosts.map((post, i) => (
+                <BlogCard key={post.id} post={post} featured index={i} />
               ))}
             </div>
           ) : (
@@ -53,11 +53,11 @@ export default async function Home({ searchParams }: HomeProps) {
         </section>
 
         <section>
-          <h2 className="mb-6 text-3xl font-bold tracking-tight">{recentHeading}</h2>
+          <h2 className="mb-6 text-3xl font-bold tracking-tight animate-fade-in-up">{recentHeading}</h2>
           {recentPosts.length > 0 ? (
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {recentPosts.map((post) => (
-                <BlogCard key={post.id} post={post} />
+              {recentPosts.map((post, i) => (
+                <BlogCard key={post.id} post={post} index={i} />
               ))}
             </div>
           ) : (

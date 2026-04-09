@@ -73,6 +73,20 @@ export async function syncUserRole(userId: string, email?: string | null, name?:
   }
 }
 
+export async function verifyAdmin(user?: { id: string; email?: string | null }) {
+  if (!user?.email) return false
+  if (isAdminEmail(user.email)) return true
+  if (!supabaseAdmin) return false
+
+  const { data: profile } = await supabaseAdmin
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle()
+
+  return profile?.role === "admin"
+}
+
 export async function ensureUserProfile(userId: string, email?: string | null, name?: string | null) {
   if (!supabaseAdmin || !userId || !email) {
     return false

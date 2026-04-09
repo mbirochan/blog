@@ -5,13 +5,8 @@ import { redirect } from "next/navigation"
 import { randomUUID } from "crypto"
 
 import { supabase } from "@/lib/supabase"
-import { isAdminEmail } from "@/lib/admin"
+import { verifyAdmin } from "@/lib/admin"
 import { auth } from "@/lib/auth"
-
-type AdminCandidate = {
-  id: string
-  email?: string | null
-}
 
 function normalizeSlug(input: string, fallback = "") {
   const base = (input || fallback || "")
@@ -43,28 +38,6 @@ function formatContent(raw: string): string {
     .join("")
 }
 
-async function ensureAdminAccess(user?: AdminCandidate) {
-  if (!user?.email) {
-    return false
-  }
-
-  if (isAdminEmail(user.email)) {
-    return true
-  }
-
-  if (!supabase) {
-    return false
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle()
-
-  return profile?.role === "admin"
-}
-
 export async function savePost(formData: FormData) {
   const session = await auth()
 
@@ -72,7 +45,7 @@ export async function savePost(formData: FormData) {
     return { error: "You must be logged in" }
   }
 
-  if (!(await ensureAdminAccess(session.user))) {
+  if (!(await verifyAdmin(session.user))) {
     return { error: "You do not have permission to manage posts" }
   }
 
@@ -182,7 +155,7 @@ export async function deletePost(id: string) {
     return { error: "You must be logged in" }
   }
 
-  if (!(await ensureAdminAccess(session.user))) {
+  if (!(await verifyAdmin(session.user))) {
     return { error: "You do not have permission to delete posts" }
   }
 
@@ -224,7 +197,7 @@ export async function togglePublishStatus(id: string) {
     return { error: "You must be logged in" }
   }
 
-  if (!(await ensureAdminAccess(session.user))) {
+  if (!(await verifyAdmin(session.user))) {
     return { error: "You do not have permission to publish posts" }
   }
 
@@ -272,7 +245,7 @@ export async function toggleFeaturedStatus(id: string) {
     return { error: "You must be logged in" }
   }
 
-  if (!(await ensureAdminAccess(session.user))) {
+  if (!(await verifyAdmin(session.user))) {
     return { error: "You do not have permission to manage featured posts" }
   }
 
@@ -323,7 +296,7 @@ export async function getAllPosts() {
     redirect("/signin")
   }
 
-  if (!(await ensureAdminAccess(session.user))) {
+  if (!(await verifyAdmin(session.user))) {
     redirect("/")
   }
 
@@ -398,30 +371,6 @@ export async function getPostBySlug(slugParam: string) {
   } catch (error) {
     console.error("Error fetching post:", error)
     return null
-  }
-}
-
-export async function getCategories() {
-  if (!supabase) {
-    return []
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from("posts")
-      .select("category")
-      .neq("category", null)
-
-    if (error) throw error
-
-    const unique = Array.from(new Set((data || []).map((p) => (p.category as string) ?? "")))
-      .filter(Boolean)
-      .map((name) => ({ id: name, name }))
-
-    return unique
-  } catch (error) {
-    console.error("Error fetching categories:", error)
-    return []
   }
 }
 

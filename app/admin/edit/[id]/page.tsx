@@ -1,42 +1,13 @@
-import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
-import { ArrowLeft } from "lucide-react"
 
 import { PostEditor } from "@/components/admin/post-editor"
-import { Button } from "@/components/ui/button"
 import { auth } from "@/lib/auth"
-import { isAdminEmail } from "@/lib/admin"
-import { supabase } from "@/lib/supabase"
+import { verifyAdmin } from "@/lib/admin"
 import { getPostById } from "@/app/actions/post-actions"
+import { BlogLayout } from "@/components/blog-layout"
 
-type AdminCandidate = {
-  id: string
-  email?: string | null
-}
-
-async function verifyAdmin(user?: AdminCandidate) {
-  if (!user?.email) {
-    return false
-  }
-
-  if (isAdminEmail(user.email)) {
-    return true
-  }
-
-  if (!supabase) {
-    return false
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle()
-
-  return profile?.role === "admin"
-}
-
-export default async function EditPostPage({ params }: { params: { id: string } }) {
+export default async function EditPostPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const session = await auth()
 
   if (!session?.user) {
@@ -49,23 +20,17 @@ export default async function EditPostPage({ params }: { params: { id: string } 
     redirect("/")
   }
 
-  const post = await getPostById(params.id)
+  const post = await getPostById(id)
 
   if (!post) {
     notFound()
   }
 
   return (
-    <div className="container mx-auto py-10">
-      <div className="mb-6 flex items-center justify-between">
+    <BlogLayout>
+      <div className="space-y-6">
         <h1 className="text-3xl font-bold">Edit Post</h1>
-        <Button variant="ghost" asChild>
-          <Link href="/admin">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
-          </Link>
-        </Button>
-      </div>
-      <PostEditor
+        <PostEditor
         post={{
           id: post.id,
           title: post.title,
@@ -78,6 +43,7 @@ export default async function EditPostPage({ params }: { params: { id: string } 
           featured: post.featured ?? false,
         }}
       />
-    </div>
+      </div>
+    </BlogLayout>
   )
 }

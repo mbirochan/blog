@@ -109,6 +109,10 @@ export async function deleteComment(commentId: string) {
 }
 
 export async function getComments(postId: string) {
+  if (!supabase) {
+    return { comments: [] }
+  }
+
   try {
     const { data, error } = await supabase
       .from("comments")

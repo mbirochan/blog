@@ -1,4 +1,5 @@
-import { Suspense } from "react"
+import type { Metadata } from "next"
+import { cache, Suspense } from "react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { ArrowLeft, Calendar, Clock, Tag } from "lucide-react"
@@ -13,9 +14,21 @@ import { getComments } from "@/app/actions/comment-actions"
 import { getUpvoteStatus } from "@/app/actions/upvote-actions"
 import { auth } from "@/lib/auth"
 
+const getCachedPost = cache((slug: string) => getPostBySlug(slug))
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
+  const post = await getCachedPost(slug)
+  if (!post) return { title: "Post Not Found" }
+  return {
+    title: post.title,
+    description: post.excerpt,
+  }
+}
+
 export default async function BlogPost({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const post = await getPostBySlug(slug)
+  const post = await getCachedPost(slug)
 
   if (!post) {
     notFound()
@@ -37,24 +50,20 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
       }
     : null
 
-  // For demo purposes, let's create an array of images
   const postImages = post.image_url
-    ? [
-        post.image_url,
-        "/placeholder.svg?height=600&width=800&text=Another+Image",
-      ]
+    ? [post.image_url]
     : []
 
   return (
     <BlogLayout>
-      <div className="max-w-3xl mx-auto">
-        <Link href="/" className="inline-flex items-center text-sm text-muted-foreground hover:text-primary mb-6">
+      <div className="max-w-3xl mx-auto animate-fade-in-up">
+        <Link href="/" className="inline-flex items-center text-sm text-muted-foreground hover:text-primary mb-8 transition-colors duration-200">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to home
         </Link>
 
-        <article className="prose prose-stone dark:prose-invert max-w-none">
-          <div className="flex flex-wrap items-center gap-2 mb-4">
+        <article className="prose prose-stone dark:prose-invert prose-lg max-w-none prose-headings:leading-tight prose-p:leading-relaxed">
+          <div className="flex flex-wrap items-center gap-3 mb-6 not-prose">
             {post.category && (
               <Badge variant="outline" className="text-xs">
                 <Tag className="mr-1 h-3 w-3" />
@@ -67,11 +76,11 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
             </div>
             <div className="flex items-center text-sm text-muted-foreground">
               <Clock className="mr-1 h-3 w-3" />
-              <span>{Math.ceil(post.content.length / 1000)} min read</span>
+              <span>{Math.max(1, Math.ceil(post.content.split(/\s+/).length / 200))} min read</span>
             </div>
           </div>
 
-          <h1>{post.title}</h1>
+          <h1 className="text-4xl font-bold leading-tight">{post.title}</h1>
 
           <div className="flex items-center gap-4 my-6">
             <UpvoteButton postId={post.id} initialUpvotes={upvotes} initialHasUpvoted={hasUpvoted} />

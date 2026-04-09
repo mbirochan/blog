@@ -2,12 +2,22 @@
 
 import type React from "react"
 
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast"
 import { savePost } from "@/app/actions/post-actions"
 
@@ -28,7 +38,19 @@ interface PostEditorProps {
 export function PostEditor({ post }: PostEditorProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
+  const [showPublishConfirm, setShowPublishConfirm] = useState(false)
   const [imageUrl, setImageUrl] = useState(post?.image_url ?? "")
+  const [existingCategories, setExistingCategories] = useState<string[]>([])
+
+  useEffect(() => {
+    fetch("/api/categories")
+      .then((r) => r.json())
+      .then((data) => {
+        const cats = Array.isArray(data?.categories) ? data.categories.map((c: { name: string }) => c.name) : []
+        setExistingCategories(cats)
+      })
+      .catch(() => {})
+  }, [])
   const formRef = useRef<HTMLFormElement>(null)
   const router = useRouter()
   const { toast } = useToast()
@@ -166,7 +188,13 @@ export function PostEditor({ post }: PostEditorProps) {
           name="category"
           placeholder="e.g. Technology, Design"
           defaultValue={post?.category || ""}
+          list="category-suggestions"
         />
+        <datalist id="category-suggestions">
+          {existingCategories.map((cat) => (
+            <option key={cat} value={cat} />
+          ))}
+        </datalist>
       </div>
 
       <div className="space-y-2">
@@ -251,10 +279,25 @@ export function PostEditor({ post }: PostEditorProps) {
         <Button type="submit" variant="outline" disabled={isLoading || isUploading}>
           {isLoading ? "Saving..." : "Save as Draft"}
         </Button>
-        <Button type="button" onClick={() => submitPost(true)} disabled={isLoading || isUploading}>
+        <Button type="button" onClick={() => setShowPublishConfirm(true)} disabled={isLoading || isUploading}>
           {isLoading ? "Publishing..." : "Publish"}
         </Button>
       </div>
+
+      <AlertDialog open={showPublishConfirm} onOpenChange={setShowPublishConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Publish this post?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will make the post publicly visible to all readers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => submitPost(true)}>Publish</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </form>
   )
 }

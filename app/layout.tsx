@@ -9,8 +9,11 @@ import { Toaster } from "@/components/ui/toaster"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Birochan Mainali's Blog",
-  description: "My personal blog site. Here I post my thoughts, ideas and trends "
+  title: {
+    default: "Birochan Mainali — Blog",
+    template: "%s | Birochan Mainali",
+  },
+  description: "Personal thoughts & ideas by Birochan Mainali",
 }
 
 export default function RootLayout({

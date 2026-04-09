@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 import { motion, AnimatePresence } from "framer-motion"
 import { ChevronLeft, ChevronRight, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -34,7 +35,9 @@ export function ImageGallery({ images, alt = "Blog image" }: ImageGalleryProps) 
   if (images.length === 1) {
     return (
       <div className="relative cursor-pointer overflow-hidden rounded-lg" onClick={toggleFullscreen}>
-        <img src={images[0] || "/placeholder.svg"} alt={alt} className="w-full h-auto object-cover rounded-lg" />
+        <div className="relative aspect-video">
+          <Image src={images[0]} alt={alt} fill className="object-cover rounded-lg" />
+        </div>
 
         {isFullscreen && (
           <FullscreenView
@@ -52,11 +55,14 @@ export function ImageGallery({ images, alt = "Blog image" }: ImageGalleryProps) 
   return (
     <div className="space-y-2">
       <div className="relative cursor-pointer overflow-hidden rounded-lg" onClick={toggleFullscreen}>
-        <img
-          src={images[currentIndex] || "/placeholder.svg"}
-          alt={alt}
-          className="w-full h-[400px] object-cover rounded-lg"
-        />
+        <div className="relative h-[400px] w-full">
+          <Image
+            src={images[currentIndex]}
+            alt={alt}
+            fill
+            className="object-cover rounded-lg"
+          />
+        </div>
 
         <Button
           variant="ghost"
@@ -90,15 +96,16 @@ export function ImageGallery({ images, alt = "Blog image" }: ImageGalleryProps) 
           <button
             key={index}
             className={cn(
-              "h-16 w-16 overflow-hidden rounded-md border-2 transition-all",
+              "relative h-16 w-16 overflow-hidden rounded-md border-2 transition-all",
               currentIndex === index ? "border-primary" : "border-transparent opacity-70 hover:opacity-100",
             )}
             onClick={() => setCurrentIndex(index)}
           >
-            <img
-              src={image || "/placeholder.svg"}
+            <Image
+              src={image}
               alt={`Thumbnail ${index + 1}`}
-              className="h-full w-full object-cover"
+              fill
+              className="object-cover"
             />
           </button>
         ))}
@@ -174,11 +181,14 @@ function FullscreenView({
             </>
           )}
 
-          <img
-            src={images[currentIndex] || "/placeholder.svg"}
-            alt="Fullscreen view"
-            className="max-h-[90vh] max-w-[90vw] object-contain"
-          />
+          <div className="relative h-[90vh] w-[90vw]">
+            <Image
+              src={images[currentIndex]}
+              alt="Fullscreen view"
+              fill
+              className="object-contain"
+            />
+          </div>
         </div>
       </motion.div>
     </AnimatePresence>

@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { SignOutButton } from "@/components/sign-out-button"
+import { BlogLayout } from "@/components/blog-layout"
 
 export default async function ProfilePage() {
   const session = await auth()
@@ -15,7 +16,7 @@ export default async function ProfilePage() {
   const user = session.user
 
   return (
-    <div className="container mx-auto py-10">
+    <BlogLayout>
       <div className="max-w-2xl mx-auto space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Profile</h1>
@@ -66,6 +67,6 @@ export default async function ProfilePage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </BlogLayout>
   )
 }
