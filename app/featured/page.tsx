@@ -2,10 +2,25 @@ import type { Metadata } from "next"
 import { BlogLayout } from "@/components/blog-layout"
 import { BlogCard } from "@/components/blog-card"
 import { getPublishedPosts } from "@/app/actions/post-actions"
+import { getCanonicalUrl, SITE_AUTHOR } from "@/lib/seo"
 
 export const metadata: Metadata = {
   title: "Featured Posts",
-  description: "Highlighted posts by Birochan Mainali",
+  description: `Highlighted posts by ${SITE_AUTHOR}.`,
+  alternates: {
+    canonical: getCanonicalUrl("/featured"),
+  },
+  openGraph: {
+    type: "website",
+    url: getCanonicalUrl("/featured"),
+    title: "Featured Posts",
+    description: `Highlighted posts by ${SITE_AUTHOR}.`,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Featured Posts",
+    description: `Highlighted posts by ${SITE_AUTHOR}.`,
+  },
 }
 
 export default async function FeaturedPage() {

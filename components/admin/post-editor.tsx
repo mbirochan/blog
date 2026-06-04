@@ -226,7 +226,7 @@ export function PostEditor({ post }: PostEditorProps) {
         <Input
           id="imageUpload"
           type="file"
-          accept="image/*"
+          accept="image/jpeg,image/png,image/gif,image/webp"
           onChange={handleFileUpload}
           disabled={isUploading || isLoading}
         />

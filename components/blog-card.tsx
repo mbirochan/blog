@@ -59,7 +59,7 @@ export function BlogCard({ post, featured = false, index = 0 }: BlogCardProps) {
             <CardFooter className="flex-none pt-0">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <time dateTime={post.created_at}>{new Date(post.created_at).toLocaleDateString()}</time>
-                <span>•</span>
+                <span>-</span>
                 <span>{Math.max(1, Math.ceil(post.content.split(/\s+/).length / 200))} min read</span>
               </div>
             </CardFooter>

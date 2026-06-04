@@ -8,6 +8,134 @@ import { supabase } from "@/lib/supabase"
 import { verifyAdmin } from "@/lib/admin"
 import { auth } from "@/lib/auth"
 
+const ALLOWED_CONTENT_TAGS = new Set([
+  "a",
+  "b",
+  "blockquote",
+  "br",
+  "code",
+  "em",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "i",
+  "li",
+  "ol",
+  "p",
+  "pre",
+  "s",
+  "strong",
+  "u",
+  "ul",
+])
+
+const VOID_CONTENT_TAGS = new Set(["br"])
+
+const STRIP_CONTENT_BLOCKS = /<\s*(script|style|iframe|object|embed|svg|math)\b[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi
+const HTML_TOKEN = /<!--[\s\S]*?-->|<\/?[^>]+>/g
+const ATTRIBUTE_TOKEN = /([^\s"'<>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&(?!(?:[a-zA-Z][a-zA-Z0-9]+|#\d+|#x[\da-fA-F]+);)/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+}
+
+function sanitizeHref(value: string) {
+  const href = value.trim()
+  const compact = href.replace(/[\u0000-\u001f\u007f\s]+/g, "").toLowerCase()
+
+  if (
+    (href.startsWith("/") && !href.startsWith("//")) ||
+    href.startsWith("#") ||
+    compact.startsWith("http://") ||
+    compact.startsWith("https://") ||
+    compact.startsWith("mailto:") ||
+    compact.startsWith("tel:")
+  ) {
+    return href
+  }
+
+  return ""
+}
+
+function sanitizeContentTag(token: string) {
+  const match = token.match(/^<\s*(\/)?\s*([a-zA-Z0-9-]+)([\s\S]*?)\/?\s*>$/)
+
+  if (!match) {
+    return ""
+  }
+
+  const [, closingSlash, rawTagName, rawAttributes] = match
+  const tagName = rawTagName.toLowerCase()
+
+  if (!ALLOWED_CONTENT_TAGS.has(tagName)) {
+    return ""
+  }
+
+  if (closingSlash) {
+    return VOID_CONTENT_TAGS.has(tagName) ? "" : `</${tagName}>`
+  }
+
+  if (VOID_CONTENT_TAGS.has(tagName)) {
+    return `<${tagName} />`
+  }
+
+  const attributes: string[] = []
+
+  if (tagName === "a") {
+    ATTRIBUTE_TOKEN.lastIndex = 0
+    let attributeMatch: RegExpExecArray | null
+
+    while ((attributeMatch = ATTRIBUTE_TOKEN.exec(rawAttributes))) {
+      const attributeName = attributeMatch[1].toLowerCase()
+      const attributeValue =
+        attributeMatch[2] ?? attributeMatch[3] ?? attributeMatch[4] ?? ""
+
+      if (attributeName === "href") {
+        const href = sanitizeHref(attributeValue)
+
+        if (href) {
+          attributes.push(`href="${escapeHtml(href)}"`)
+        }
+      }
+
+      if (attributeName === "title" && attributeValue) {
+        attributes.push(`title="${escapeHtml(attributeValue)}"`)
+      }
+    }
+
+    if (attributes.some((attribute) => attribute.startsWith("href="))) {
+      attributes.push('rel="noopener noreferrer"')
+    }
+  }
+
+  return attributes.length > 0
+    ? `<${tagName} ${attributes.join(" ")}>`
+    : `<${tagName}>`
+}
+
+function sanitizePostContent(html: string) {
+  const withoutBlockedContent = html.replace(STRIP_CONTENT_BLOCKS, "")
+  let sanitized = ""
+  let lastIndex = 0
+
+  for (const match of withoutBlockedContent.matchAll(HTML_TOKEN)) {
+    sanitized += escapeHtml(withoutBlockedContent.slice(lastIndex, match.index))
+    sanitized += sanitizeContentTag(match[0])
+    lastIndex = (match.index ?? 0) + match[0].length
+  }
+
+  sanitized += escapeHtml(withoutBlockedContent.slice(lastIndex))
+
+  return sanitized
+}
+
 function normalizeSlug(input: string, fallback = "") {
   const base = (input || fallback || "")
     .toString()
@@ -29,12 +157,12 @@ function formatContent(raw: string): string {
   }
 
   if (/<[^>]+>/.test(base)) {
-    return base
+    return sanitizePostContent(base)
   }
 
   return base
     .split(/\n{2,}/)
-    .map((paragraph) => `<p>${paragraph.trim().replace(/\n/g, "<br />")}</p>`)
+    .map((paragraph) => `<p>${escapeHtml(paragraph.trim()).replace(/\n/g, "<br />")}</p>`)
     .join("")
 }
 
@@ -346,7 +474,14 @@ export async function getPublishedPosts() {
   }
 }
 
-export async function getPostBySlug(slugParam: string) {
+type GetPostBySlugOptions = {
+  allowAdminDraftPreview?: boolean
+}
+
+export async function getPostBySlug(
+  slugParam: string,
+  options: GetPostBySlugOptions = {},
+) {
   if (!supabase) {
     return null
   }
@@ -354,10 +489,23 @@ export async function getPostBySlug(slugParam: string) {
   const slug = normalizeSlug(slugParam)
 
   try {
-    const { data, error } = await supabase
+    let canPreviewDrafts = false
+
+    if (options.allowAdminDraftPreview) {
+      const session = await auth()
+      canPreviewDrafts = !!session?.user && (await verifyAdmin(session.user))
+    }
+
+    let query = supabase
       .from("posts")
       .select("*")
       .eq("slug", slug)
+
+    if (!canPreviewDrafts) {
+      query = query.eq("published", true)
+    }
+
+    const { data, error } = await query
       .maybeSingle()
 
     if (error) {
@@ -367,7 +515,12 @@ export async function getPostBySlug(slugParam: string) {
       throw error
     }
 
-    return data ?? null
+    return data
+      ? {
+          ...data,
+          content: sanitizePostContent(data.content || ""),
+        }
+      : null
   } catch (error) {
     console.error("Error fetching post:", error)
     return null

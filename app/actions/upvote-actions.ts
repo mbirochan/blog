@@ -4,7 +4,27 @@
 import { revalidatePath } from "next/cache"
 import { cookies } from "next/headers"
 import { supabase } from "@/lib/supabase"
-import { auth } from "@/lib/auth"
+
+async function revalidatePostById(postId: string) {
+  if (!supabase) {
+    return
+  }
+
+  const { data: post, error } = await supabase
+    .from("posts")
+    .select("slug")
+    .eq("id", postId)
+    .maybeSingle()
+
+  if (error) {
+    console.error("Error fetching post slug for revalidation:", error)
+    return
+  }
+
+  if (post?.slug) {
+    revalidatePath(`/blog/${post.slug}`)
+  }
+}
 
 // Function to handle anonymous upvotes
 export async function toggleUpvote(postId: string) {
@@ -48,7 +68,7 @@ export async function toggleUpvote(postId: string) {
     }
 
     // Revalidate the post page
-    revalidatePath(`/blog/${postId}`)
+    await revalidatePostById(postId)
 
     return { success: true, hasUpvoted: !hasUpvoted, upvotes: newUpvoteCount }
   } catch (error) {

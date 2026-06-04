@@ -2,7 +2,7 @@ import NextAuth, { getServerSession } from "next-auth"
 import type { AuthOptions } from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
 import CredentialsProvider from "next-auth/providers/credentials"
-import { randomUUID } from "crypto"
+import { createHmac, randomUUID, timingSafeEqual } from "crypto"
 import { networkInterfaces } from "os"
 
 import { ADMIN_SUPABASE_USER_ID, isAdminEmail, syncUserRole } from "./admin"
@@ -94,7 +94,6 @@ if (!process.env.NEXTAUTH_URL_INTERNAL) {
 }
 
 // Extend the built-in session and JWT types
-// eslint-disable-next-line @typescript-eslint/no-namespace
 declare module "next-auth" {
   interface Session {
     user: {
@@ -107,7 +106,6 @@ declare module "next-auth" {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-namespace
 declare module "next-auth/jwt" {
   interface JWT {
     id?: string
@@ -118,9 +116,47 @@ declare module "next-auth/jwt" {
 }
 
 const ADMIN_NAME = process.env.ADMIN_NAME || "Birochan Mainali"
+const OTP_HASH_VERSION = "v1"
+
+function getOtpHashSecret(): string | null {
+  return process.env.OTP_HASH_SECRET || process.env.NEXTAUTH_SECRET || null
+}
+
+function constantTimeEqual(left: string, right: string): boolean {
+  const leftBuffer = Buffer.from(left)
+  const rightBuffer = Buffer.from(right)
+
+  return leftBuffer.length === rightBuffer.length && timingSafeEqual(leftBuffer, rightBuffer)
+}
+
+function verifyOtpCode(email: string, otp: string, storedCode: string): boolean {
+  const [version, salt, digest, ...extraParts] = storedCode.split(":")
+
+  if (version === OTP_HASH_VERSION) {
+    const secret = getOtpHashSecret()
+    if (!secret) {
+      throw new Error("OTP hash secret is not configured")
+    }
+
+    if (
+      extraParts.length > 0 ||
+      !salt ||
+      !digest ||
+      !/^[a-f0-9]{32}$/i.test(salt) ||
+      !/^[a-f0-9]{64}$/i.test(digest)
+    ) {
+      return false
+    }
+
+    const expectedDigest = createHmac("sha256", secret).update(`${email}:${otp}:${salt}`).digest("hex")
+    return constantTimeEqual(expectedDigest, digest)
+  }
+
+  return constantTimeEqual(storedCode, otp)
+}
 
 export const authConfig: AuthOptions = {
-  debug: true,
+  debug: process.env.NODE_ENV !== "production",
   useSecureCookies: isSecureSite,
   secret: process.env.NEXTAUTH_SECRET,
   session: {
@@ -148,7 +184,7 @@ export const authConfig: AuthOptions = {
         }
 
         if (!supabaseAdmin) {
-          throw new Error("Supabase admin client unavailable")
+          throw new Error("Unable to verify code. Please try again.")
         }
 
         const { data, error } = await supabaseAdmin
@@ -163,9 +199,19 @@ export const authConfig: AuthOptions = {
 
         const isExpired = new Date(data.expires_at).getTime() < Date.now()
         if (isExpired) {
+          await supabaseAdmin.from("auth_email_otps").delete().eq("email", email)
           throw new Error("OTP has expired. Please request a new code.")
         }
-        if (data.code !== otp) {
+
+        let isOtpValid = false
+        try {
+          isOtpValid = verifyOtpCode(email, otp, data.code)
+        } catch (verificationError) {
+          console.error("OTP verification error:", verificationError)
+          throw new Error("Unable to verify code. Please try again.")
+        }
+
+        if (!isOtpValid) {
           throw new Error("Incorrect code. Please try again.")
         }
 

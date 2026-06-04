@@ -6,6 +6,27 @@ import { supabaseAdmin } from "@/lib/supabase-admin"
 import { isAdminEmail, ensureUserProfile } from "@/lib/admin"
 import { auth } from "@/lib/auth"
 
+async function revalidatePostById(postId: string) {
+  if (!supabase) {
+    return
+  }
+
+  const { data: post, error } = await supabase
+    .from("posts")
+    .select("slug")
+    .eq("id", postId)
+    .maybeSingle()
+
+  if (error) {
+    console.error("Error fetching post slug for revalidation:", error)
+    return
+  }
+
+  if (post?.slug) {
+    revalidatePath(`/blog/${post.slug}`)
+  }
+}
+
 export async function addComment(formData: FormData) {
   const session = await auth()
 
@@ -22,7 +43,6 @@ export async function addComment(formData: FormData) {
   }
 
   if (!supabase) {
-    revalidatePath(`/blog/${postId}`)
     return { success: true }
   }
 
@@ -52,7 +72,7 @@ export async function addComment(formData: FormData) {
 
     if (error) throw error
 
-    revalidatePath(`/blog/${postId}`)
+    await revalidatePostById(postId)
 
     return { success: true, comment: data }
   } catch (error) {
@@ -99,7 +119,7 @@ export async function deleteComment(commentId: string) {
 
     if (error) throw error
 
-    revalidatePath(`/blog/${comment.post_id}`)
+    await revalidatePostById(comment.post_id)
 
     return { success: true }
   } catch (error) {
