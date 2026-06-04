@@ -59,12 +59,9 @@ const priorityUrls = [
   normalizeUrl(process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : ""),
 ].filter(Boolean) as string[]
 
-const fallbackUrl = priorityUrls.length > 0 ? priorityUrls[0] : undefined
-
 const resolvedSiteUrl =
-  priorityUrls.find((url) => url && !isLoopbackHost(url)) ??
+  priorityUrls[0] ??
   discoverLocalNetworkUrl() ??
-  fallbackUrl ??
   "http://localhost:3000"
 
 const siteUrl = new URL(resolvedSiteUrl)
