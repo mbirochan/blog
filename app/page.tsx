@@ -126,6 +126,9 @@ export default async function Home({ searchParams }: HomeProps) {
         ) : (
           <div className="max-w-3xl animate-fade-in-up">
             <h1 className="text-4xl font-bold tracking-tight">{SITE_DESCRIPTION}</h1>
+            <p className="mt-3 text-sm text-muted-foreground/70">
+              While the thoughts and opinions are mine, I do use AI to help with writing and proper grammar.
+            </p>
           </div>
         )}
 
