@@ -2,8 +2,7 @@ import type { Metadata } from "next"
 
 export const SITE_NAME = "Birochan Mainali Blog"
 export const SITE_AUTHOR = "Birochan Mainali"
-export const SITE_DESCRIPTION =
-  "Software engineering notes, product thinking, and personal essays from Birochan Mainali."
+export const SITE_DESCRIPTION = "kinda camera shy so i write my mind"
 export const PRODUCTION_SITE_URL = "https://blog-delta-ashy-90.vercel.app"
 
 function withProtocol(value: string) {
